@@ -134,6 +134,7 @@ Portal *create_portal(Display *display, Window client_window)
 
 void destroy_portal(Portal *portal)
 {
+    destroy_portal_client(portal);
     destroy_portal_frame(portal);
     unregister_portal(portal);
 }
