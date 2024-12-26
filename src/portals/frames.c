@@ -37,17 +37,6 @@ void create_portal_frame(Portal *portal, Window *out_window, cairo_t **out_cr)
     *out_cr = cr;
 }
 
-int destroy_portal_frame(Portal *portal)
-{
-    if(portal == NULL || portal->frame_window == 0) return -1;
-
-    cairo_surface_t *surface = cairo_get_target(portal->frame_cr);
-    cairo_destroy(portal->frame_cr);
-    cairo_surface_destroy(surface);
-
-    return XDestroyWindow(portal->display, portal->frame_window);
-}
-
 void draw_portal_frame(Portal *portal)
 {
     cairo_t *cr = portal->frame_cr;
@@ -73,6 +62,23 @@ void draw_portal_frame(Portal *portal)
     cairo_set_line_width(cr, 2);
     cairo_rectangle(cr, 0, 0, width, height);
     cairo_stroke(cr);
+}
+
+int destroy_portal_frame(Portal *portal)
+{
+    if(portal == NULL || portal->frame_window == 0)
+    {
+        LOG_WARNING("Attempted to destroy a non-existent portal frame window.");
+        return -1;
+    }
+
+    // Destroy the Cairo context and surface.
+    cairo_surface_t *surface = cairo_get_target(portal->frame_cr);
+    cairo_destroy(portal->frame_cr);
+    cairo_surface_destroy(surface);
+
+    // Destroy the frame window.
+    return XDestroyWindow(portal->display, portal->frame_window);
 }
 
 HANDLE(Expose)
