@@ -4,15 +4,6 @@ static Window *client_list = NULL;
 static size_t client_count = 0;
 static size_t client_capacity = 0;
 
-/**
- * Updates the `_NET_CLIENT_LIST` property on the root window, setting it to the
- * current list of client windows. EWMH specification requires every window 
- * manager to advertise a list of client windows this way so that other 
- * applications can query it.
- * 
- * @param display The X11 display.
- * @param root_window The root window.
- */
 static void publish_ewmh_client_list(Display *display, Window root_window) {
     Atom net_client_list = XInternAtom(display, "_NET_CLIENT_LIST", False);
     
@@ -28,14 +19,6 @@ static void publish_ewmh_client_list(Display *display, Window root_window) {
     );
 }
 
-/**
- * Adds a window to our internal list of EWMH client windows.
- * 
- * @param window The window to add to the list.
- * 
- * @note `publish_ewmh_client_list()` must be called after this function to
- * update the `_NET_CLIENT_LIST` property on the root window.
- */
 static void add_to_ewmh_client_list(Window window) {
     if (client_count >= client_capacity) {
         client_capacity = (client_capacity == 0) ? 16 : client_capacity * 2;
@@ -45,14 +28,6 @@ static void add_to_ewmh_client_list(Window window) {
     client_list[client_count++] = window;
 }
 
-/**
- * Removes a window from our internal list of EWMH client windows.
- * 
- * @param window The window to add to the list.
- * 
- * @note `publish_ewmh_client_list()` must be called after this function to
- * update the `_NET_CLIENT_LIST` property on the root window.
- */
 static void remove_from_ewmh_client_list(Window window) {
     for (size_t i = 0; i < client_count; i++) {
         if (client_list[i] == window) {
@@ -63,6 +38,15 @@ static void remove_from_ewmh_client_list(Window window) {
     }
 }
 
+static Bool is_in_ewmh_client_list(Window window) {
+    for (size_t i = 0; i < client_count; i++) {
+        if (client_list[i] == window) {
+            return True;
+        }
+    }
+    return False;
+}
+
 HANDLE(MapRequest)
 {
     XMapRequestEvent *_event = &event->xmaprequest;
@@ -71,8 +55,10 @@ HANDLE(MapRequest)
     // safely assume that the window is a client window.
     Window client_window = _event->window;
 
-    add_to_ewmh_client_list(client_window);
-    publish_ewmh_client_list(display, root_window);
+    if (!is_in_ewmh_client_list(client_window)) {
+        add_to_ewmh_client_list(client_window);
+        publish_ewmh_client_list(display, root_window);
+    }
 }
 
 HANDLE(DestroyNotify)
