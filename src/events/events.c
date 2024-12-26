@@ -79,7 +79,7 @@ void initialize_event_loop(Display *display, Window root_window)
 
     is_event_loop_initialized = true;
 
-    // Choose which events the root window should listen to.
+    // Choose which root window events we should listen for.
     XSelectInput(display, root_window, x_root_event_mask);
     xi_select_input(display, root_window, xi_root_event_mask);
 
