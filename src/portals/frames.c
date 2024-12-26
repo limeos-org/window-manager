@@ -76,9 +76,13 @@ int destroy_portal_frame(Portal *portal)
     cairo_surface_t *surface = cairo_get_target(portal->frame_cr);
     cairo_destroy(portal->frame_cr);
     cairo_surface_destroy(surface);
+    portal->frame_cr = NULL;
 
     // Destroy the frame window.
-    return XDestroyWindow(portal->display, portal->frame_window);
+    XDestroyWindow(portal->display, portal->frame_window);
+    portal->frame_window = 0;
+
+    return 0;
 }
 
 HANDLE(Expose)
