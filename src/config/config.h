@@ -9,6 +9,12 @@
 #define CFG_MAX_VALUE_LENGTH 64
 #define CFG_MAX_ENTRIES 64
 
+// Macros for retrieving configuration values.
+#define GET_CONFIG_IMPL(dest, dest_size, type, key, fallback) \
+    get_config_value_##type(dest, dest_size, key, fallback)
+#define GET_CONFIG(dest, dest_size, bundle) \
+    GET_CONFIG_IMPL(dest, dest_size, bundle)
+
 // Configuration field constants (background_mode).
 #define CFG_TYPE_BACKGROUND_MODE str
 #define CFG_KEY_BACKGROUND_MODE "background_mode"
@@ -107,9 +113,3 @@ void get_config_value_path(char *dest, size_t dest_size, char *key, char *fallba
  * @warning Don't use directly! Use the `GET_CONFIG` macro instead.
  */
 void get_config_value_hex(unsigned long *dest, size_t dest_size, char *key, char *fallback);
-
-#define GET_CONFIG_IMPL(dest, dest_size, type, key, fallback) \
-    get_config_value_##type(dest, dest_size, key, fallback)
-
-#define GET_CONFIG(dest, dest_size, bundle) \
-    GET_CONFIG_IMPL(dest, dest_size, bundle)
