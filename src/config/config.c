@@ -9,14 +9,14 @@ static const char default_config[] =
     "# Background\n"
     "# --- \n\n"
     "# May either be 'solid' or 'image'.\n"
-    CFG_KEY_BACKGROUND_MODE "=" CFG_DEF_BACKGROUND_MODE "\n\n"
+    CFG_KEY_BACKGROUND_MODE "=" CFG_DEFAULT_BACKGROUND_MODE "\n\n"
     "# A hexadecimal representation of a color.\n"
     "# Used when " CFG_KEY_BACKGROUND_MODE " is set to 'solid'.\n"
-    CFG_KEY_BACKGROUND_COLOR "=" CFG_DEF_BACKGROUND_COLOR "\n\n"
+    CFG_KEY_BACKGROUND_COLOR "=" CFG_DEFAULT_BACKGROUND_COLOR "\n\n"
     "# A file path to a PNG background image.\n"
     "# Other file formats such as JPG are not supported.\n"
     "# Used when " CFG_KEY_BACKGROUND_MODE " is set to 'image'.\n"
-    CFG_KEY_BACKGROUND_IMAGE_PATH "=" CFG_DEF_BACKGROUND_IMAGE_PATH "\n\n";
+    CFG_KEY_BACKGROUND_IMAGE_PATH "=" CFG_DEFAULT_BACKGROUND_IMAGE_PATH "\n\n";
 // clang-format on
 
 static void create_config_directory(const char *path)
@@ -62,9 +62,9 @@ static void create_config_file(const char *path)
     fclose(config_file);
 }
 
-static void parse_config_file(const char *filename)
+static void parse_config_file(const char *path)
 {
-    FILE *file = fopen(filename, "r");
+    FILE *file = fopen(path, "r");
     if (!file)
     {
         LOG_ERROR("Could not open the configuration file for parsing.");
