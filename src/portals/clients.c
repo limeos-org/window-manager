@@ -5,10 +5,6 @@ static const long client_event_mask =
 
 static void handle_portal_client_config(Portal *portal, XConfigureRequestEvent *event)
 {
-    // If the portal hasn't been initialized yet, and a client requests its
-    // initial configuration, we accept this request and configure the window.
-    // Once the portal is initialized, we will ignore all configuration requests,
-    // as the clients size and position are managed by the window manager.
     if(portal == NULL)
     {
         XWindowChanges changes;

@@ -1,16 +1,6 @@
 #pragma once
 #include "../all.h"
 
-typedef struct {
-    Display *display;
-    char *title;
-    int x, y;
-    unsigned int width, height;
-    Window frame_window;
-    cairo_t *frame_cr;
-    Window client_window;
-} Portal;
-
 // The height of the title bar in pixels.
 #define PORTAL_TITLE_BAR_HEIGHT 15
 
@@ -26,12 +16,59 @@ typedef struct {
 // The maximum initial height of a portal as a percentage of the screen width.
 #define MAXIMUM_INITIAL_PORTAL_HEIGHT_PERCENT 0.8
 
+typedef struct {
+    Display *display;
+    char *title;
+    int x, y;
+    unsigned int width, height;
+    Window frame_window;
+    cairo_t *frame_cr;
+    Window client_window;
+} Portal;
+
+#ifdef STATIC
+
+/**
+ * Registers a new portal in the portals registry.
+ * 
+ * @param display The X11 display connection.
+ * @param title Portal title.
+ * @param frame_window The X11 window ID of the frame window.
+ * @param frame_cr The Cairo context used for drawing the frame.
+ * @param client_window The X11 window ID of the client window.
+ * @param x Portal x position.
+ * @param y Portal y position.
+ * @param width Portal width.
+ * @param height Portal height.
+ * 
+ * @return The registered portal, or `NULL` upon failure.
+ */
+static Portal *register_portal(
+    Display *display,
+    const char *title,
+    Window frame_window,
+    cairo_t *frame_cr,
+    Window client_window,
+    int x, int y,
+    unsigned int width, unsigned int height
+);
+
+/**
+ * Unregisters a portal from the portals registry.
+ * 
+ * @param portal The portal to unregister.
+ */
+static void unregister_portal(Portal *portal);
+
+#endif
+
 /**
  * Creates a portal and registers it to the portal registry.
  * 
  * @param display The display where the portal will be located.
  * @param client_window The client window to create the portal from.
- * @return The created portal, or NULL upon failure.
+ * 
+ * @return The created portal, or `NULL` upon failure.
  */
 Portal *create_portal(Display *display, Window client_window);
 
@@ -46,7 +83,7 @@ void destroy_portal(Portal *portal);
  * Finds a portal in the portal registry using the `window` provided.
  * 
  * @param window A client or frame window.
- * @return The found portal or NULL if not found.
+ * @return The found portal or `NULL` if not found.
  */
 Portal *find_portal(Window window);
 
@@ -56,7 +93,7 @@ Portal *find_portal(Window window);
  * @param portal The portal to check the frame area for.
  * @param rel_x The x coordinate, relative to the portal.
  * @param rel_y The y coordinate, relative to the portal.
- * @return True if the mouse is within the frame area, false otherwise.
+ * @return True (1) if the mouse is within the frame area, False (0) otherwise.
  */
 bool is_portal_frame_area(Portal *portal, int rel_x, int rel_y);
 
@@ -66,6 +103,6 @@ bool is_portal_frame_area(Portal *portal, int rel_x, int rel_y);
  * @param portal The portal to check the client area for.
  * @param rel_x The x coordinate, relative to the portal.
  * @param rel_y The y coordinate, relative to the portal.
- * @return True if the mouse is within the client area, false otherwise.
+ * @return True (1) if the mouse is within the client area, False (0) otherwise.
  */
 bool is_portal_client_area(Portal *portal, int rel_x, int rel_y);

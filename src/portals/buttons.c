@@ -19,7 +19,8 @@ static void calc_portal_button_pos(Portal *portal, PortalButtonType type, int *o
     }
 }
 
-static bool is_portal_button_area(Portal *portal, PortalButtonType type, int mouse_rel_x, int mouse_rel_y) {
+static bool is_portal_button_area(Portal *portal, PortalButtonType type, int mouse_rel_x, int mouse_rel_y)
+{
     int button_x, button_y;
     calc_portal_button_pos(portal, type, &button_x, &button_y);
 

@@ -1,6 +1,18 @@
 #pragma once
 #include "../all.h"
 
+#ifdef STATIC
+
+/**
+ * Sets a new title for a portal struct in memory.
+ * 
+ * @param portal The portal to set the title for.
+ * @param title The new title to set.
+ */
+static void set_portal_title(Portal *portal, const char *title);
+
+#endif
+
 /**
  * Draws the portal title text within the title bar area.
  * 
