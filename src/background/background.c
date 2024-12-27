@@ -52,9 +52,11 @@ static void draw_background_solid(cairo_t *cr, unsigned long color)
     if (cr == NULL || xlib_surface == NULL)
         return;
 
+    // Convert the color to RGB.
     double r, g, b = 0;
     hex_to_rgb(color, &r, &g, &b);
 
+    // Draw the background.
     cairo_set_source_rgb(cr, r, g, b);
     cairo_fill(cr);
     cairo_paint(cr);
