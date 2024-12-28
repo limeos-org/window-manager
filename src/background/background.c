@@ -18,6 +18,7 @@ static cairo_surface_t *load_background_image(Display *display, const char *file
         return NULL;
     }
 
+    // Get screen and image dimensions.
     int screen = DefaultScreen(display);
     int screen_width = DisplayWidth(display, screen);
     int screen_height = DisplayHeight(display, screen);
