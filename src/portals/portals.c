@@ -121,11 +121,13 @@ Portal *create_portal(Display *display, Window client_window)
         portal_width, portal_height
     );
     create_portal_frame(portal, &portal->frame_window, &portal->frame_cr);
-
-    // Reparent the client window to the frame window and map both windows.
     Window frame_window = portal->frame_window;
+
+    // Reparent the client window to the frame window.
     XAddToSaveSet(display, client_window);
     XReparentWindow(display, client_window, frame_window, 0, PORTAL_TITLE_BAR_HEIGHT);
+
+    // Map the frame and client windows.
     XMapWindow(display, frame_window);
     XMapWindow(display, client_window);
 

@@ -33,6 +33,7 @@ void create_portal_frame(Portal *portal, Window *out_window, cairo_t **out_cr)
     );
     cairo_t *cr = cairo_create(surface);
 
+    // Output the frame window and Cairo context.
     *out_window = frame_window;
     *out_cr = cr;
 }

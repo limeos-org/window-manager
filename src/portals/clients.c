@@ -5,23 +5,25 @@ static const long client_event_mask =
 
 static void handle_portal_client_config(Portal *portal, XConfigureRequestEvent *event)
 {
-    if(portal == NULL)
-    {
-        XWindowChanges changes;
-        changes.x = event->x;
-        changes.y = event->y;
-        changes.width = event->width;
-        changes.height = event->height;
-        changes.border_width = event->border_width;
-        changes.sibling = event->above;
-        changes.stack_mode = event->detail;
-        XConfigureWindow(
-            event->display,
-            event->window,
-            event->value_mask,
-            &changes
-        );
-    }
+    // Only handle initial client configuration requests. Once the client
+    // belongs to a portal, the window manager will handle all configuration.
+    if(portal != NULL) return;
+
+    // Apply the configuration changes exactly as requested by the client.
+    XWindowChanges changes;
+    changes.x = event->x;
+    changes.y = event->y;
+    changes.width = event->width;
+    changes.height = event->height;
+    changes.border_width = event->border_width;
+    changes.sibling = event->above;
+    changes.stack_mode = event->detail;
+    XConfigureWindow(
+        event->display,
+        event->window,
+        event->value_mask,
+        &changes
+    );
 }
 
 int destroy_portal_client(Portal *portal)

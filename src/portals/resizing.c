@@ -1,5 +1,8 @@
 #include "../all.h"
 
+#define PORTAL_RESIZE_THROTTLE_MS 16
+#define PORTAL_RESIZE_AREA_SIZE 20
+
 static Portal *resized_portal = NULL;
 static bool is_resizing = false;
 
@@ -20,6 +23,7 @@ static void start_resizing_portal(Portal *portal, int mouse_root_x, int mouse_ro
 
 static void update_resizing_portal(int mouse_root_x, int mouse_root_y, Time event_time)
 {
+    // Throttle the resizing to prevent excessive updates.
     if (event_time - last_resize_time < PORTAL_RESIZE_THROTTLE_MS) return;
 
     // Calculate new portal width and height.
@@ -48,11 +52,13 @@ static void update_resizing_portal(int mouse_root_x, int mouse_root_y, Time even
         new_portal_width, new_portal_height - PORTAL_TITLE_BAR_HEIGHT
     );
 
+    // Update the last resize time, so we can throttle the next update.
     last_resize_time = event_time;
 }
 
 static void stop_resizing_portal()
 {
+    // Disable resizing.
     is_resizing = false;
 
     // Notify the client window of the new size.
@@ -80,6 +86,7 @@ static void stop_resizing_portal()
 
 static bool is_portal_resize_area(Portal *portal, int mouse_rel_x, int mouse_rel_y)
 {
+    // Check if the mouse is within the bottom-right corner of the portal.
     return (mouse_rel_x >= (int)portal->width - PORTAL_RESIZE_AREA_SIZE && 
             mouse_rel_x <= (int)portal->width &&
             mouse_rel_y >= (int)portal->height - PORTAL_RESIZE_AREA_SIZE && 

@@ -1,5 +1,13 @@
 #include "../all.h"
 
+#define PORTAL_BUTTON_SIZE 15
+#define PORTAL_BUTTON_PADDING 5
+
+typedef enum {
+    BUTTON_CLOSE,
+    BUTTON_ARRANGE
+} PortalButtonType;
+
 static void calc_portal_button_pos(Portal *portal, PortalButtonType type, int *out_x, int *out_y)
 {
     // Calculate starting position.
@@ -21,9 +29,11 @@ static void calc_portal_button_pos(Portal *portal, PortalButtonType type, int *o
 
 static bool is_portal_button_area(Portal *portal, PortalButtonType type, int mouse_rel_x, int mouse_rel_y)
 {
+    // Calculate button position.
     int button_x, button_y;
     calc_portal_button_pos(portal, type, &button_x, &button_y);
 
+    // Determine whether the mouse is within the button area.
     return (mouse_rel_x >= button_x && 
             mouse_rel_x <= button_x + PORTAL_BUTTON_SIZE &&
             mouse_rel_y >= button_y && 
@@ -34,6 +44,7 @@ static void draw_portal_button(Portal *portal, PortalButtonType type)
 {
     cairo_t *cr = portal->frame_cr;
 
+    // Calculate button position.
     int button_x, button_y;
     calc_portal_button_pos(portal, type, &button_x, &button_y);
 
@@ -73,7 +84,6 @@ static void draw_portal_button(Portal *portal, PortalButtonType type)
 void draw_portal_buttons(Portal *portal)
 {
     draw_portal_button(portal, BUTTON_CLOSE);
-    // draw_portal_button(portal, BUTTON_ARRANGE);
 }
 
 HANDLE(GlobalButtonPress)
@@ -90,9 +100,5 @@ HANDLE(GlobalButtonPress)
     if(is_portal_button_area(portal, BUTTON_CLOSE, _event->x, _event->y))
     {
         destroy_portal(portal);
-    }
-    if(is_portal_button_area(portal, BUTTON_ARRANGE, _event->x, _event->y))
-    {
-        // TODO: Implement the arrange button.
     }
 }

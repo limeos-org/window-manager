@@ -1,5 +1,7 @@
 #include "../all.h"
 
+#define PORTAL_DRAG_THROTTLE_MS 16
+
 static Portal *dragged_portal = NULL;
 static bool is_dragging = false;
 
@@ -20,14 +22,18 @@ static void start_dragging_portal(Portal *portal, int mouse_root_x, int mouse_ro
 
 static void update_dragging_portal(int mouse_root_x, int mouse_root_y, Time event_time)
 {
+    // Throttle the dragging to prevent excessive updates.
     if (event_time - last_drag_time < PORTAL_DRAG_THROTTLE_MS) return;
 
+    // Calculate the new portal position.
     int new_portal_x = portal_start_x + (mouse_root_x - mouse_start_root_x);
     int new_portal_y = portal_start_y + (mouse_root_y - mouse_start_root_y);
 
+    // Update the portal position in memory.
     dragged_portal->x = new_portal_x;
     dragged_portal->y = new_portal_y;
 
+    // Move the portal frame window.
     XMoveWindow(
         dragged_portal->display,
         dragged_portal->frame_window,
@@ -35,11 +41,13 @@ static void update_dragging_portal(int mouse_root_x, int mouse_root_y, Time even
         new_portal_y
     );
 
+    // Update the last drag time, so we can throttle the next update.
     last_drag_time = event_time;
 }
 
 static void stop_dragging_portal()
 {
+    // Disable dragging.
     is_dragging = false;
 
     // Notify the client window of the new position.

@@ -16,6 +16,8 @@
 // The maximum initial height of a portal as a percentage of the screen width.
 #define MAXIMUM_INITIAL_PORTAL_HEIGHT_PERCENT 0.8
 
+// A portal manages a window pair consisting of a decorative frame and the
+// client content area, along with its geometry and rendering state.
 typedef struct {
     Display *display;
     char *title;
@@ -25,42 +27,6 @@ typedef struct {
     cairo_t *frame_cr;
     Window client_window;
 } Portal;
-
-#ifdef STATIC
-
-/**
- * Registers a new portal in the portals registry.
- * 
- * @param display The X11 display connection.
- * @param title Portal title.
- * @param frame_window The X11 window ID of the frame window.
- * @param frame_cr The Cairo context used for drawing the frame.
- * @param client_window The X11 window ID of the client window.
- * @param x Portal x position.
- * @param y Portal y position.
- * @param width Portal width.
- * @param height Portal height.
- * 
- * @return The registered portal, or `NULL` upon failure.
- */
-static Portal *register_portal(
-    Display *display,
-    const char *title,
-    Window frame_window,
-    cairo_t *frame_cr,
-    Window client_window,
-    int x, int y,
-    unsigned int width, unsigned int height
-);
-
-/**
- * Unregisters a portal from the portals registry.
- * 
- * @param portal The portal to unregister.
- */
-static void unregister_portal(Portal *portal);
-
-#endif
 
 /**
  * Creates a portal and registers it to the portal registry.
