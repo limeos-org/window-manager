@@ -1,5 +1,14 @@
 #include "../all.h"
 
+/**
+ * This code is responsible for managing the `_NET_CLIENT_LIST` property on
+ * the root window, which is an array of client windows that are managed by
+ * the window manager. EWMH specification requires every window manager to
+ * advertise this list so that other applications can query it.
+ * 
+ * @note https://specifications.freedesktop.org/wm-spec/1.5/ar01s03.html#id-1.4.4
+ */
+
 static Window *client_list = NULL;
 static size_t client_count = 0;
 static size_t client_capacity = 0;
