@@ -19,12 +19,6 @@
 // Event handler callback function signature.
 typedef void EventHandler(XEvent *event, Display *display, Window root_window);
 
-// Key-value pair struct for storing event handlers.
-typedef struct {
-    int event_type;
-    EventHandler *event_handler;
-} EventHandlerMap;
-
 /**
  * Registers an event handler for a given event type.
  * 

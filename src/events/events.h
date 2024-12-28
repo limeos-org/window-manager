@@ -40,35 +40,6 @@
  */
 #define GlobalMotionNotify 132
 
-#ifdef STATIC
-
-/**
- * Handles an X11 event, invoking the appropriate event handlers.
- * 
- * @param display The X display connection.
- * @param window The X window receiving the event.
- * @param event The X event structure.
- */
-static void handle_x_event(Display *display, Window window, XEvent *event);
-
-/**
- * Handles an XInput2 event, converting it to a standard X11 event, and invoking
- * the appropriate event handlers.
- *
- * @param display The X display connection.
- * @param window The X window receiving the event.
- * @param event The X event structure.
- * 
- * @note XInput2 events present themselves as an X11 `xcookie` event, where 
- * `xcookie->type` is always `GenericEvent`, containing all its data within 
- * the `xcookie->data` field. The `xcookie->data` field is initially unpopulated
- * and requires the usage of `XGetEventData()` for population. The data must 
- * later be freed using `XFreeEventData()` in order to prevent memory leaks.
- */
-static void handle_xi_event(Display *display, Window window, XEvent *event);
-
-#endif
-
 /**
  * Initiates an infinite loop, handling X11/XInput2 events as they come in, and
  * invoking the appropriate registered event handlers.

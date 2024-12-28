@@ -1,26 +1,31 @@
 #include "../all.h"
 
-static EventHandlerMap *event_handler_map = NULL;
-static int event_handler_map_size = 0;
+typedef struct {
+    int event_type;
+    EventHandler *event_handler;
+} EventHandlerMap;
+
+static EventHandlerMap *event_handlers = NULL;
+static int event_handlers_count = 0;
 
 void register_event_handler(int event_type, EventHandler *event_handler)
 {
-    EventHandlerMap *buffer = realloc(event_handler_map, (event_handler_map_size + 1) * sizeof(EventHandlerMap));
-    event_handler_map = buffer;
+    EventHandlerMap *buffer = realloc(event_handlers, (event_handlers_count + 1) * sizeof(EventHandlerMap));
+    event_handlers = buffer;
 
-    event_handler_map[event_handler_map_size].event_type = event_type;
-    event_handler_map[event_handler_map_size].event_handler = event_handler;
+    event_handlers[event_handlers_count].event_type = event_type;
+    event_handlers[event_handlers_count].event_handler = event_handler;
 
-    event_handler_map_size++;
+    event_handlers_count++;
 }
 
 void invoke_event_handlers(Display *display, Window window, int event_type, XEvent *event)
 {
-    for (int i = 0; i < event_handler_map_size; i++)
+    for (int i = 0; i < event_handlers_count; i++)
     {
-        if (event_handler_map[i].event_type == event_type)
+        if (event_handlers[i].event_type == event_type)
         {
-            event_handler_map[i].event_handler(event, display, window);
+            event_handlers[i].event_handler(event, display, window);
         }
     }
 }
