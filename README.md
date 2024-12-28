@@ -1,6 +1,6 @@
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset=".github/banner_white.png">
-  <source media="(prefers-color-scheme: light)" srcset=".github/banner_black.png">
+  <source media="(prefers-color-scheme: dark)" srcset=".github/readme_banner_white.png">
+  <source media="(prefers-color-scheme: light)" srcset=".github/readme_banner_black.png">
   <img alt="LimeOS Banner">
 </picture>
 
