@@ -2,14 +2,13 @@
 
 int x_get_window_name(Display *display, Window window, char *out_name, size_t name_size)
 {
-    Atom net_wm_name = XInternAtom(display, "_NET_WM_NAME", False);
-    Atom wm_name = XInternAtom(display, "WM_NAME", False);
-
+    // List of properties to check for the window name.
     const int property_count = 2;
     Atom properties[property_count];
-    properties[0] = net_wm_name;
-    properties[1] = wm_name;
+    properties[0] = XInternAtom(display, "_NET_WM_NAME", False);
+    properties[1] = XInternAtom(display, "WM_NAME", False);
 
+    // Loop over the properties, and stores the first one that is available.
     unsigned char *name = NULL;
     for(int i = 0; i < property_count; i++)
     {
@@ -58,4 +57,28 @@ int x_error_handler(Display *display, XErrorEvent *error) {
         );
     }
     return 0;
+}
+
+bool x_window_supports_protocol(Display *display, Window window, Atom protocol)
+{
+    Atom *protocols;
+    int count;
+    if (XGetWMProtocols(display, window, &protocols, &count))
+    {
+        for (int i = 0; i < count; i++)
+        {
+            if (protocols[i] == protocol)
+            {
+                XFree(protocols);
+                return True;
+            }
+        }
+        XFree(protocols);
+    }
+    return False;
+}
+
+bool x_window_exists(Display *display, Window window)
+{
+    return XGetWindowAttributes(display, window, &(XWindowAttributes){0}) != 0;
 }

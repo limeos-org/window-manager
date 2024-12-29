@@ -33,3 +33,24 @@ int x_get_window_name(Display *display, Window window, char *out_name, size_t na
  * @note Intended to be set as the Xlib error handler using `XSetErrorHandler()`.
  */
 int x_error_handler(Display *display, XErrorEvent *error);
+
+/**
+ * @brief Checks if a window supports a given protocol.
+ * 
+ * @param display The X11 display.
+ * @param window The window to check.
+ * @param protocol The protocol to check for.
+ * 
+ * @return True (1) if the protocol is supported, False (0) otherwise.
+ */
+bool x_window_supports_protocol(Display *display, Window window, Atom protocol);
+
+/**
+ * @brief Checks if a window exists.
+ * 
+ * @param display The X11 display.
+ * @param window The window to check.
+ * 
+ * @return True (1) if the window exists, False (0) otherwise.
+ */
+bool x_window_exists(Display *display, Window window);
