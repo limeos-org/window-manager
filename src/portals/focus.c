@@ -1,6 +1,6 @@
 #include "../all.h"
 
-static void focus_portal(Portal *portal)
+void focus_portal(Portal *portal)
 {
     Display *display = portal->display;
     Window frame_window = portal->frame_window;

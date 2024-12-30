@@ -21,7 +21,7 @@ void create_portal_frame(Portal *portal, Window *out_window, cairo_t **out_cr)
         2, 0x000000, 0xFFFFFF
     );
 
-    // Listen to frame window events.
+    // Choose which frame window events we should listen for.
     XSelectInput(display, frame_window, frame_event_mask);
 
     // Create the Cairo context for the frame window.
@@ -65,11 +65,25 @@ void draw_portal_frame(Portal *portal)
     cairo_stroke(cr);
 }
 
+bool is_portal_frame_area(Portal *portal, int rel_x, int rel_y)
+{
+    (void)portal, (void)rel_x;
+    return rel_y <= PORTAL_TITLE_BAR_HEIGHT;
+}
+
+bool is_portal_frame_valid(Portal *portal)
+{
+    return (
+        portal != NULL &&
+        portal->frame_window != 0 &&
+        x_window_exists(portal->display, portal->frame_window)
+    );
+}
+
 int destroy_portal_frame(Portal *portal)
 {
-    if(portal == NULL || portal->frame_window == 0)
+    if(!is_portal_frame_valid(portal))
     {
-        LOG_WARNING("Attempted to destroy a non-existent portal frame window.");
         return -1;
     }
 
@@ -80,7 +94,13 @@ int destroy_portal_frame(Portal *portal)
     portal->frame_cr = NULL;
 
     // Destroy the frame window.
-    XDestroyWindow(portal->display, portal->frame_window);
+    int status = XDestroyWindow(portal->display, portal->frame_window);
+    if (status == 0)
+    {
+        return -2;
+    }
+
+    // Clear the frame window reference from the portal.
     portal->frame_window = 0;
 
     return 0;

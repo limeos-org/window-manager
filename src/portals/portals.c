@@ -128,8 +128,7 @@ Portal *create_portal(Display *display, Window client_window)
     XReparentWindow(display, client_window, frame_window, 0, PORTAL_TITLE_BAR_HEIGHT);
 
     // Map the frame and client windows.
-    XMapWindow(display, frame_window);
-    XMapWindow(display, client_window);
+    map_portal(portal);
 
     // Invoke the PortalCreated event.
     XEvent event;
@@ -150,9 +149,21 @@ void destroy_portal(Portal *portal)
     Window client_window = portal->client_window;
     Window frame_window = portal->frame_window;
 
-    // Destroy the client and frame windows, and unregister the portal.
+    // Destroy the client window, client may refuse.
     destroy_portal_client(portal);
+    if (is_portal_client_valid(portal)) 
+    {
+        return; // Could not destroy client, don't proceed.
+    }
+
+    // Destroy the frame window.
     destroy_portal_frame(portal);
+    if (is_portal_frame_valid(portal)) 
+    {
+        return; // Could not destroy frame, don't proceed.
+    }
+
+    // Unregister the portal.
     unregister_portal(portal);
 
     // Invoke the PortalDestroyed event.
@@ -167,6 +178,31 @@ void destroy_portal(Portal *portal)
     invoke_event_handlers(display, DefaultRootWindow(display), PortalDestroyed, &event);
 }
 
+void map_portal(Portal *portal)
+{
+    Display *display = portal->display;
+    Window client_window = portal->client_window;
+    Window frame_window = portal->frame_window;
+
+    // Map the frame and client windows.
+    XMapWindow(display, frame_window);
+    XMapWindow(display, client_window);
+
+    // Focus the portal.
+    focus_portal(portal);
+}
+
+void unmap_portal(Portal *portal)
+{
+    Display *display = portal->display;
+    Window client_window = portal->client_window;
+    Window frame_window = portal->frame_window;
+
+    // Unmap the frame and client windows.
+    XUnmapWindow(display, frame_window);
+    XUnmapWindow(display, client_window);
+}
+
 Portal *find_portal(Window window)
 {
     for (int i = 0; i < portals_count; i++)
@@ -178,43 +214,4 @@ Portal *find_portal(Window window)
         }
     }
     return NULL;
-}
-
-bool is_portal_frame_area(Portal *portal, int rel_x, int rel_y)
-{
-    (void)portal, (void)rel_x;
-    return rel_y <= PORTAL_TITLE_BAR_HEIGHT;
-}
-
-bool is_portal_client_area(Portal *portal, int rel_x, int rel_y)
-{
-    (void)portal, (void)rel_x;
-    return rel_y > PORTAL_TITLE_BAR_HEIGHT;
-}
-
-HANDLE(MapRequest)
-{
-    XMapRequestEvent *_event = &event->xmaprequest;
-
-    // Considering a MapRequest event can only be sent by clients, we can
-    // safely assume that the window is a client window.
-    Window client_window = _event->window;
-
-    // Make sure the client window does not already belong to a portal.
-    Portal *portal = find_portal(client_window);
-    if (portal != NULL) return;
-
-    create_portal(display, client_window);
-}
-
-HANDLE(DestroyNotify)
-{
-    XDestroyWindowEvent *_event = &event->xdestroywindow;
-
-    // The source of a DestroyNotify event is not guaranteed to be a portal
-    // related window, so we must check whether it is or not before proceeding.
-    Portal *portal = find_portal(_event->window);
-    if (portal == NULL) return;
-
-    destroy_portal(portal);
 }

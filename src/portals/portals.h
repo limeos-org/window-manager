@@ -39,36 +39,34 @@ typedef struct {
 Portal *create_portal(Display *display, Window client_window);
 
 /**
- * Destroys a portal and unregisters it from the portal registry.
+ * Attempts to destroy a portal and unregisters it from the portal registry
+ * if destruction was successful.
  * 
  * @param portal The portal to destroy.
+ * 
+ * @note Will not complete if the client or frame windows refuse to close.
  */
 void destroy_portal(Portal *portal);
+
+/**
+ * Maps all portal windows to the screen.
+ * 
+ * @param portal The portal to map.
+ */
+void map_portal(Portal *portal);
+
+/**
+ * Unmaps all portal windows from the screen.
+ * 
+ * @param portal The portal to unmap.
+ */
+void unmap_portal(Portal *portal);
 
 /**
  * Finds a portal in the portal registry using the `window` provided.
  * 
  * @param window A client or frame window.
+ * 
  * @return The found portal or `NULL` if not found.
  */
 Portal *find_portal(Window window);
-
-/**
- * Checks if the provided coordinates are within the frame area of the portal.
- * 
- * @param portal The portal to check the frame area for.
- * @param rel_x The x coordinate, relative to the portal.
- * @param rel_y The y coordinate, relative to the portal.
- * @return True (1) if the mouse is within the frame area, False (0) otherwise.
- */
-bool is_portal_frame_area(Portal *portal, int rel_x, int rel_y);
-
-/**
- * Checks if the provided coordinates are within the client area of the portal.
- * 
- * @param portal The portal to check the client area for.
- * @param rel_x The x coordinate, relative to the portal.
- * @param rel_y The y coordinate, relative to the portal.
- * @return True (1) if the mouse is within the client area, False (0) otherwise.
- */
-bool is_portal_client_area(Portal *portal, int rel_x, int rel_y);
