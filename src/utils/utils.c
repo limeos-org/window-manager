@@ -1,5 +1,15 @@
 #include "../all.h"
 
+bool is_library_available(const char *name)
+{
+    void *handle = dlopen(name, RTLD_NOW);
+    if (handle == NULL) {
+        return False;
+    }
+    dlclose(handle);
+    return True;
+}
+
 unsigned long rgb_to_hex(double r, double g, double b)
 {
     unsigned long hex = 0;

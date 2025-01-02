@@ -2,6 +2,19 @@
 #include "../all.h"
 
 /**
+ * Checks if a shared library is available. 
+ * 
+ * @param name The `.so` file name of the shared library.
+ * 
+ * @return - `True (1)` The shared library is available.
+ * @return - `False (0)` The shared library is not available.
+ * 
+ * @note - Use `ldconfig -p | grep "libname"` to find shared library names.
+ * @note - Include ABI version in the shared library name (e.g. `libX11.so.6`).
+ */
+bool is_library_available(const char *name);
+
+/**
  * Converts RGB values to a hexadecimal representation.
  *
  * @param r Red channel, in the range [0.0, 1.0].

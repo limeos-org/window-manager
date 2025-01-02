@@ -14,6 +14,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <dlfcn.h>
 #include <time.h>
 
 #include "limits.h"
