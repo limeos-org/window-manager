@@ -16,7 +16,8 @@ When conflicts arise between these sections, always follow the repository-specif
 ### Table of Contents
 
 **Repository Contributing Guidelines**  
-•&emsp;[Building & Running](#building--running)
+•&emsp;[Building the executable](#building-the-executable)  
+•&emsp;[Running the executable](#running-the-executable)  
 
 **General Contributing Guidelines**  
 •&emsp;[Git Workflow](#git-workflow)  
@@ -37,7 +38,7 @@ When conflicts arise between these sections, always follow the repository-specif
 
 ## Repository Contributing Guidelines
 
-### Building & Running
+### Building the executable
 
 To build this project locally, you will need the following dependencies:
 
@@ -60,9 +61,9 @@ make
 This will compile the source code and generate an executable in the `./bin`
 directory.
 
-You can now either run the executable directly in order to use it as your
-primary window manager, or you can use a nested X server like `Xephyr` in order
-to run the window manager within your currently active window manager.
+### Running the executable
+
+You can either run the executable directly in order to use it as your primary window manager (Using `startx` or a display manager), or you can use a nested X server like `Xephyr` in order to run the window manager within your currently active window manager.
 
 > **NOTE:** Testing this window manager within a Wayland compositor may cause
 conflicts. We recommend using an X11-based window manager as your parent
