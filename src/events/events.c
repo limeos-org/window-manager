@@ -10,7 +10,9 @@ static const long x_root_event_mask =
 static const long xi_root_event_mask =
     XI_RawButtonPressMask |
     XI_RawButtonReleaseMask |
-    XI_RawMotionMask;
+    XI_RawMotionMask |
+    XI_RawKeyPressMask |
+    XI_RawKeyReleaseMask;
 
 static void handle_x_event(Display *display, Window window, XEvent *event)
 {
@@ -53,6 +55,16 @@ static void handle_xi_event(Display *display, Window window, XEvent *event)
     {
         XEvent new_event = xi_convert_raw_motion_event(display, window, raw_event);
         invoke_event_handlers(display, window, GlobalMotionNotify, &new_event);
+    }
+    if(event->xcookie.evtype == XI_RawKeyPress)
+    {
+        XEvent new_event = xi_convert_raw_key_press_event(display, window, raw_event);
+        invoke_event_handlers(display, window, GlobalKeyPress, &new_event);
+    }
+    if(event->xcookie.evtype == XI_RawKeyRelease)
+    {
+        XEvent new_event = xi_convert_raw_key_release_event(display, window, raw_event);
+        invoke_event_handlers(display, window, GlobalKeyRelease, &new_event);
     }
 
     XFreeEventData(display, &event->xcookie);

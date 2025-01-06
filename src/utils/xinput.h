@@ -88,3 +88,44 @@ XEvent xi_convert_raw_button_release_event(Display *display, Window window, XIRa
  * `XFreeEventData()` in order to prevent memory leaks.
  */
 XEvent xi_convert_raw_motion_event(Display *display, Window window, XIRawEvent *raw_event);
+
+/**
+ * Converts an XInput2 `RawKeyPress` event to a standard X11 `KeyPress` event.
+ *
+ * @param display The X11 display.
+ * @param window The X11 window where the event occurred.
+ * @param raw_event The XInput2 `RawKeyPress` event to convert.
+ * 
+ * @return The converted standard X11 `KeyPress` event.
+ * 
+ * @note Retrieving the `XIRawEvent` data from an XInput2 event is unfortunately
+ * not quite straight-forward. XInput2 events present themselves as an X11 
+ * `xcookie` event, where `xcookie->type` is always `GenericEvent`, containing
+ * all its data within the `xcookie->data` field. The `xcookie->data` field is
+ * initially unpopulated and requires the usage of `XGetEventData()` for
+ * population. The `xcookie->data` field can then be cast with the `XIRawEvent`
+ * type and be passed to this function. The data must later be freed using
+ * `XFreeEventData()` in order to prevent memory leaks.
+ */
+XEvent xi_convert_raw_key_press_event(Display *display, Window window, XIRawEvent *raw_event);
+
+/**
+ * Converts an XInput2 `RawKeyRelease` event to a standard X11 `KeyRelease` 
+ * event.
+ *
+ * @param display The X11 display.
+ * @param window The X11 window where the event occurred.
+ * @param raw_event The XInput2 `RawKeyRelease` event to convert.
+ * 
+ * @return The converted standard X11 `KeyRelease` event.
+ * 
+ * @note Retrieving the `XIRawEvent` data from an XInput2 event is unfortunately
+ * not quite straight-forward. XInput2 events present themselves as an X11 
+ * `xcookie` event, where `xcookie->type` is always `GenericEvent`, containing
+ * all its data within the `xcookie->data` field. The `xcookie->data` field is
+ * initially unpopulated and requires the usage of `XGetEventData()` for
+ * population. The `xcookie->data` field can then be cast with the `XIRawEvent`
+ * type and be passed to this function. The data must later be freed using
+ * `XFreeEventData()` in order to prevent memory leaks.
+ */
+XEvent xi_convert_raw_key_release_event(Display *display, Window window, XIRawEvent *raw_event);

@@ -120,3 +120,36 @@ XEvent xi_convert_raw_motion_event(Display *display, Window window, XIRawEvent *
 {
     return xi_convert_raw_mouse_event(display, window, MotionNotify, raw_event);
 }
+
+static XEvent xi_convert_raw_key_event(Display *display, Window window, int event_type, XIRawEvent *raw_event)
+{
+    Window root_window = DefaultRootWindow(display);
+
+    XEvent new_event;
+    new_event.xkey.type = event_type;
+    new_event.xkey.keycode = raw_event->detail;
+    new_event.xkey.serial = raw_event->serial;
+    new_event.xkey.send_event = raw_event->send_event;
+    new_event.xkey.display = raw_event->display;
+    new_event.xkey.window = window;
+    new_event.xkey.root = root_window;
+    new_event.xkey.subwindow = 0;
+    new_event.xkey.time = raw_event->time;
+    new_event.xkey.x = 0;
+    new_event.xkey.y = 0;
+    new_event.xkey.x_root = 0;
+    new_event.xkey.y_root = 0;
+    new_event.xkey.same_screen = True;
+
+    return new_event;
+}
+
+XEvent xi_convert_raw_key_press_event(Display *display, Window window, XIRawEvent *raw_event)
+{
+    return xi_convert_raw_key_event(display, window, KeyPress, raw_event);
+}
+
+XEvent xi_convert_raw_key_release_event(Display *display, Window window, XIRawEvent *raw_event)
+{
+    return xi_convert_raw_key_event(display, window, KeyRelease, raw_event);
+}
