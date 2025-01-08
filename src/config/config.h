@@ -55,15 +55,6 @@
         CFG_KEY_EXIT_SHORTCUT, \
         CFG_DEFAULT_EXIT_SHORTCUT
 
-// Configuration field constants (restart_shortcut).
-#define CFG_TYPE_RESTART_SHORTCUT str
-#define CFG_KEY_RESTART_SHORTCUT "restart_shortcut"
-#define CFG_DEFAULT_RESTART_SHORTCUT "super+shift+r"
-#define CFG_BUNDLE_RESTART_SHORTCUT \
-        CFG_TYPE_RESTART_SHORTCUT, \
-        CFG_KEY_RESTART_SHORTCUT, \
-        CFG_DEFAULT_RESTART_SHORTCUT
-
 // Configuration field constants (background_mode).
 #define CFG_TYPE_BACKGROUND_MODE str
 #define CFG_KEY_BACKGROUND_MODE "background_mode"
