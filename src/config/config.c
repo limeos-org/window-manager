@@ -14,6 +14,14 @@ static int config_entries_count = 0;
 // clang-format off
 static const char default_config[] =
     "# ---\n"
+    "# General\n"
+    "# --- \n"
+    "\n"
+    "# The throttle time in milliseconds for resizing and dragging operations.\n"
+    "# Increasing this number can drastically improve performance.\n"
+    CFG_KEY_THROTTLE_MS "=" CFG_DEFAULT_THROTTLE_MS "\n"
+    "\n"
+    "# ---\n"
     "# Shortcuts\n"
     "# --- \n"
     "\n"
@@ -172,6 +180,18 @@ void get_config_value_hex(unsigned long *dest, size_t dest_size, char *key, char
     char hex_string[16];
     get_config_value_str(hex_string, sizeof(hex_string), key, fallback);
     *dest = strtoul(hex_string, NULL, 16);
+}
+
+void get_config_value_int(int *dest, size_t dest_size, char *key, char *fallback)
+{
+    (void)dest_size;
+
+    if (dest == NULL)
+        return;
+
+    char int_string[16];
+    get_config_value_str(int_string, sizeof(int_string), key, fallback);
+    *dest = atoi(int_string);
 }
 
 HANDLE(Prepare)

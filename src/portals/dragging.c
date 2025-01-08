@@ -1,13 +1,12 @@
 #include "../all.h"
 
-#define PORTAL_DRAG_THROTTLE_MS 16
-
 static Portal *dragged_portal = NULL;
 static bool is_dragging = false;
 
 static int mouse_start_root_x = 0, mouse_start_root_y = 0;
 static int portal_start_x = 0, portal_start_y = 0;
 
+static int throttle_ms = 0;
 static Time last_drag_time = 0;
 
 static void start_dragging_portal(Portal *portal, int mouse_root_x, int mouse_root_y)
@@ -23,7 +22,7 @@ static void start_dragging_portal(Portal *portal, int mouse_root_x, int mouse_ro
 static void update_dragging_portal(int mouse_root_x, int mouse_root_y, Time event_time)
 {
     // Throttle the dragging to prevent excessive updates.
-    if (event_time - last_drag_time < PORTAL_DRAG_THROTTLE_MS) return;
+    if (event_time - last_drag_time < (Time)throttle_ms) return;
 
     // Calculate the new portal position.
     int new_portal_x = portal_start_x + (mouse_root_x - mouse_start_root_x);
@@ -72,6 +71,11 @@ static void stop_dragging_portal()
         StructureNotifyMask,
         (XEvent *)&configure_event
     );
+}
+
+HANDLE(Initialize)
+{
+    GET_CONFIG(&throttle_ms, sizeof(throttle_ms), CFG_BUNDLE_THROTTLE_MS);
 }
 
 HANDLE(GlobalButtonPress)

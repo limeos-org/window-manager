@@ -1,6 +1,5 @@
 #include "../all.h"
 
-#define PORTAL_RESIZE_THROTTLE_MS 16
 #define PORTAL_RESIZE_AREA_SIZE 20
 
 static Portal *resized_portal = NULL;
@@ -9,6 +8,7 @@ static bool is_resizing = false;
 static int mouse_start_root_x = 0, mouse_start_root_y = 0;
 static int portal_start_width = 0, portal_start_height = 0;
 
+static int throttle_ms = 0;
 static Time last_resize_time = 0;
 
 static void start_resizing_portal(Portal *portal, int mouse_root_x, int mouse_root_y)
@@ -24,7 +24,7 @@ static void start_resizing_portal(Portal *portal, int mouse_root_x, int mouse_ro
 static void update_resizing_portal(int mouse_root_x, int mouse_root_y, Time event_time)
 {
     // Throttle the resizing to prevent excessive updates.
-    if (event_time - last_resize_time < PORTAL_RESIZE_THROTTLE_MS) return;
+    if (event_time - last_resize_time < (Time)throttle_ms) return;
 
     // Calculate new portal width and height.
     int new_portal_width = max(
@@ -92,6 +92,11 @@ static bool is_portal_resize_area(Portal *portal, int mouse_rel_x, int mouse_rel
             mouse_rel_x <= (int)portal->width &&
             mouse_rel_y >= (int)portal->height - PORTAL_RESIZE_AREA_SIZE && 
             mouse_rel_y <= (int)portal->height);
+}
+
+HANDLE(Initialize)
+{
+    GET_CONFIG(&throttle_ms, sizeof(throttle_ms), CFG_BUNDLE_THROTTLE_MS);
 }
 
 HANDLE(GlobalButtonPress)

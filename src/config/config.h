@@ -19,6 +19,15 @@
 #define GET_CONFIG(dest, dest_size, bundle) \
     GET_CONFIG_IMPL(dest, dest_size, bundle)
 
+// Configuration field constants (throttle_ms).
+#define CFG_TYPE_THROTTLE_MS int
+#define CFG_KEY_THROTTLE_MS "throttle_ms"
+#define CFG_DEFAULT_THROTTLE_MS "16"
+#define CFG_BUNDLE_THROTTLE_MS \
+        CFG_TYPE_THROTTLE_MS, \
+        CFG_KEY_THROTTLE_MS, \
+        CFG_DEFAULT_THROTTLE_MS
+
 // Configuration field constants (terminal_shortcut).
 #define CFG_TYPE_TERMINAL_SHORTCUT str
 #define CFG_KEY_TERMINAL_SHORTCUT "terminal_shortcut"
@@ -104,10 +113,23 @@ void get_config_value_path(char *dest, size_t dest_size, char *key, char *fallba
  * Intended to be used for configuration values of type `hex`.
  *
  * @param dest Buffer where the value will be stored.
- * @param dest_size Size of the destination buffer.
+ * @param dest_size Size of the destination buffer, may be `NULL`.
  * @param key Configuration key to look up.
  * @param fallback Default value to use if key is not found.
  *
  * @warning Don't use directly! Use the `GET_CONFIG` macro instead.
  */
 void get_config_value_hex(unsigned long *dest, size_t dest_size, char *key, char *fallback);
+
+/**
+ * Retrieves a configuration value from the loaded configuration entries.
+ * Intended to be used for configuration values of type `int`.
+ *
+ * @param dest Buffer where the value will be stored.
+ * @param dest_size Size of the destination buffer, may be `NULL`.
+ * @param key Configuration key to look up.
+ * @param fallback Default value to use if key is not found.
+ *
+ * @warning Don't use directly! Use the `GET_CONFIG` macro instead.
+ */
+void get_config_value_int(int *dest, size_t dest_size, char *key, char *fallback);
