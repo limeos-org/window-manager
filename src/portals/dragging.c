@@ -75,7 +75,9 @@ static void stop_dragging_portal()
 
 HANDLE(Initialize)
 {
-    GET_CONFIG(&throttle_ms, sizeof(throttle_ms), CFG_BUNDLE_THROTTLE_MS);
+    int framerate;
+    GET_CONFIG(&framerate, sizeof(framerate), CFG_BUNDLE_FRAMERATE);
+    throttle_ms = framerate_to_throttle_ms(framerate);
 }
 
 HANDLE(GlobalButtonPress)

@@ -19,14 +19,14 @@
 #define GET_CONFIG(dest, dest_size, bundle) \
     GET_CONFIG_IMPL(dest, dest_size, bundle)
 
-// Configuration field constants (throttle_ms).
-#define CFG_TYPE_THROTTLE_MS int
-#define CFG_KEY_THROTTLE_MS "throttle_ms"
-#define CFG_DEFAULT_THROTTLE_MS "16"
-#define CFG_BUNDLE_THROTTLE_MS \
-        CFG_TYPE_THROTTLE_MS, \
-        CFG_KEY_THROTTLE_MS, \
-        CFG_DEFAULT_THROTTLE_MS
+// Configuration field constants (framerate).
+#define CFG_TYPE_FRAMERATE int
+#define CFG_KEY_FRAMERATE "framerate"
+#define CFG_DEFAULT_FRAMERATE "60"
+#define CFG_BUNDLE_FRAMERATE \
+        CFG_TYPE_FRAMERATE, \
+        CFG_KEY_FRAMERATE, \
+        CFG_DEFAULT_FRAMERATE
 
 // Configuration field constants (terminal_shortcut).
 #define CFG_TYPE_TERMINAL_SHORTCUT str

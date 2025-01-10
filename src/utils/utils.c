@@ -58,6 +58,12 @@ char** split_string(const char* string, const char* delimiter, int* out_count)
     return tokens;
 }
 
+int framerate_to_throttle_ms(int framerate)
+{
+    if (framerate <= 0) return 1;
+    return 1000 / framerate;
+}
+
 unsigned long rgb_to_hex(double r, double g, double b)
 {
     unsigned long hex = 0;

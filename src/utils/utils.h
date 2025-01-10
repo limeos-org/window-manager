@@ -29,6 +29,15 @@ bool is_library_available(const char *name);
 char** split_string(const char* string, const char* delimiter, int* out_count);
 
 /**
+ * Converts a framerate to a throttle time in milliseconds.
+ * 
+ * @param framerate The framerate to convert.
+ * 
+ * @return The throttle time in milliseconds.
+ */
+int framerate_to_throttle_ms(int framerate);
+
+/**
  * Converts RGB values to a hexadecimal representation.
  *
  * @param r Red channel, in the range [0.0, 1.0].
