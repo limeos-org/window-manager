@@ -4,6 +4,7 @@
 #include <X11/keysym.h>
 #include <X11/XKBlib.h>
 #include <X11/Xatom.h>
+#include <X11/cursorfont.h>
 #include <X11/extensions/XInput2.h>
 #include <cairo/cairo.h>
 #include <cairo/cairo-xlib.h>
