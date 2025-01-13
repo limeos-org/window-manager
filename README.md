@@ -13,7 +13,11 @@ the essential functionalities that users expect from a modern window manager.
 
 ## Contributing
 
-We welcome all contributions that help shape and improve this project. Whether you're reporting bugs, suggesting new features, improving documentation, or submitting code changes, your input is valued and appreciated.
+We welcome all contributions that help shape and improve this project. Whether 
+you're reporting bugs, suggesting new features, improving documentation, or 
+submitting code changes, your input is valued and appreciated. If you are 
+planning on making large code changes, please consult the project maintainers 
+beforehand.
 
 To get started, see the `CONTRIBUTING.md` file.
 
