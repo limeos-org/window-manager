@@ -1,14 +1,14 @@
-#include "../all.h"
-
 /**
  * This code is responsible for showing and hiding markers (i.e. cursors).
  * Markers are stored in a deck, where the marker on top of the deck (i.e. most
  * recently added) is the one currently being shown. Markers may be removed
  * from the deck, no matter their position.
- * 
- * The reason the name "marker" was chosen instead of "cursor" is to create a 
+ *
+ * The reason the name "marker" was chosen instead of "cursor" is to create a
  * clear distinction between X11 cursor logic and our own cursor logic.
  */
+
+#include "../all.h"
 
 typedef struct {
     unsigned int id;
@@ -24,13 +24,15 @@ typedef struct {
 
 static MarkerDeck marker_deck;
 
-static void show_marker(Display *display, Marker *marker)
+static void show_marker(Marker *marker)
 {
+    Display *display = DefaultDisplay;
+    Window root_window = DefaultRootWindow(display);
+
     // Ungrab the pointer, in case it was previously grabbed.
     XUngrabPointer(display, CurrentTime);
 
     // Show the specified marker.
-    Window root_window = DefaultRootWindow(display);
     Cursor cursor = marker->cursor;
     if (marker->grab == true)
     {
@@ -66,8 +68,10 @@ static Marker* find_marker(unsigned int id, int *out_index)
     return NULL;
 }
 
-void add_marker(Display *display, unsigned int id, unsigned int shape, bool grab)
+void add_marker(unsigned int id, unsigned int shape, bool grab)
 {
+    Display *display = DefaultDisplay;
+
     // Ensure the marker isn't already in the deck.
     if (find_marker(id, NULL) != NULL) return;
 
@@ -85,11 +89,13 @@ void add_marker(Display *display, unsigned int id, unsigned int shape, bool grab
     marker_deck.size++;
 
     // Show the marker.
-    show_marker(display, &marker_deck.items[marker_deck.size - 1]);
+    show_marker(&marker_deck.items[marker_deck.size - 1]);
 }
 
-void remove_marker(Display *display, unsigned int id)
+void remove_marker(unsigned int id)
 {
+    Display *display = DefaultDisplay;
+
     // Ensure the marker is in in the deck.
     int index = -1;
     if (find_marker(id, &index) == NULL) return;
@@ -107,7 +113,7 @@ void remove_marker(Display *display, unsigned int id)
     // Show the last marker in the deck.
     if (marker_deck.size > 0)
     {
-        show_marker(display, &marker_deck.items[marker_deck.size - 1]);
+        show_marker(&marker_deck.items[marker_deck.size - 1]);
     }
 }
 
@@ -119,5 +125,5 @@ HANDLE(Initialize)
     marker_deck.items = malloc(marker_deck.capacity * sizeof(Marker));
 
     // Add the default marker.
-    add_marker(display, string_to_id("default"), XC_left_ptr, false);
+    add_marker(string_to_id("default"), XC_left_ptr, false);
 }

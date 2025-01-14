@@ -2,67 +2,110 @@
 #include "../all.h"
 
 /**
- * @brief Retrieves the name of an X11 window.
+ * Alias for the `x_get_default_display()` function.
+ */
+#define DefaultDisplay x_get_default_display()
+
+/**
+ * Sets the default X11 display for global access across the codebase.
  * 
- * Attempts to retrieve the name of the window using the `_NET_WM_NAME` property
- * first. If unsuccesful, it will try to retrieve the name using the `WM_NAME`
- * property, which is an older standard, but ensures compatibility with legacy
- * applications.
+ * @param display The X11 display.
  * 
- * @param display The display where the window is located.
+ * @note - The default display can be retrieved using the `DefaultDisplay` 
+ * macro.
+ */
+void x_set_default_display(Display *display);
+
+/**
+ * Retrieves the default X11 display for global access across the codebase.
+ * 
+ * @return - `Display*` - The default X11 display.
+ * @return - `NULL` - The default display has not been set.
+ * 
+ * @warning - Don't use directly! Use the `DefaultDisplay` macro instead.
+ * 
+ * @note - The default display can be set using the `x_set_default_display()` 
+ * function.
+ */
+Display *x_get_default_display();
+
+/**
+ * Retrieves the current time.
+ * 
+ * @return - `Time` - The current time.
+ */
+Time x_get_current_time();
+
+/**
+ * Retrieves the process ID of the X client that owns the window.
+ * 
+ * @param display The X11 display.
+ * @param window The target window.
+ * 
+ * @return - `pid_t` - The process ID of the X client.
+ * @return - `-1` - The process ID could not be retrieved.
+ * 
+ * @note - This function may fail as some X clients don't set the `_NET_WM_PID`
+ * property.
+ * @note - The `_NET_WM_PID` property is a part of the EWMH standard.
+ */
+pid_t x_get_window_pid(Display *display, Window window);
+
+/**
+ * Retrieves the parent window of a given window.
+ * 
+ * @param display The X11 display.
+ * @param window The target window.
+ * 
+ * @return - `Window` - The parent window.
+ * @return - `0` - The parent window could not be retrieved.
+ */
+Window x_get_window_parent(Display *display, Window window);
+
+/**
+ * Retrieves the name of an X11 window.
+ * 
+ * @param display The X11 display.
  * @param window The window to retrieve the name for.
  * @param out_name The buffer where the name will be stored.
  * @param name_size The size of the `out_name` buffer.
  * 
- * @return 0 on success, non-zero integer otherwise.
+ * @return - `0` - The name was successfully retrieved.
+ * @return - `-1` - The name could not be retrieved.
  */
 int x_get_window_name(Display *display, Window window, char *out_name, size_t name_size);
 
 /**
- * @brief X11 error handler for non-fatal X protocol errors.
- * 
- * Called by X server when protocol errors occur. Logs the error message
- * but allows program to continue running, unlike the default Xlib error
- * handler which would terminate the program.
- * 
- * @param display The display where the error occured.
- * @param error The error event.
- * @return Always returns 0 to indicate that the error has been handled. This
- * is necessary to prevent the default Xlib error handler from being invoked.
- * 
- * @note Intended to be set as the Xlib error handler using `XSetErrorHandler()`.
- */
-int x_error_handler(Display *display, XErrorEvent *error);
-
-/**
- * @brief Checks if a window supports a given protocol.
+ * Checks if a window supports a given protocol.
  * 
  * @param display The X11 display.
  * @param window The window to check.
  * @param protocol The protocol to check for.
  * 
- * @return True (1) if the protocol is supported, False (0) otherwise.
+ * @return - `true` - The protocol is supported.
+ * @return - `false` - The protocol is not supported.
  */
 bool x_window_supports_protocol(Display *display, Window window, Atom protocol);
 
 /**
- * @brief Checks if a window exists.
+ * Checks if a window exists.
  * 
  * @param display The X11 display.
  * @param window The window to check.
  * 
- * @return True (1) if the window exists, False (0) otherwise.
+ * @return - `true` - The window exists.
+ * @return - `false` - The window does not exist.
  */
 bool x_window_exists(Display *display, Window window);
 
 /**
- * @brief Converts a key name to a key symbol.
+ * Converts a key name to a key symbol.
  * 
  * @param name The string containing the key name.
  * @param out_key The buffer where the key symbol will be stored.
  * 
- * @return - `0` The conversion was succesful.
- * @return - `-1` The conversion failed, key symbol output is `NoSymbol`.
+ * @return - `0` - The conversion was succesful.
+ * @return - `-1` - The conversion failed, key symbol output is `NoSymbol`.
  * 
  * @note - This function treats key names case-insensitively.
  * @note - If you want to convert multiple key names, use the 
@@ -71,17 +114,124 @@ bool x_window_exists(Display *display, Window window);
 int x_key_name_to_symbol(const char *name, int *out_key);
 
 /**
- * @brief Converts multiple key names to multiple key symbols.
+ * Converts multiple key names to multiple key symbols.
  * 
  * @param names The string containing the key names.
  * @param delimiter The delimiter used to separate the key names.
  * @param out_keys The buffer where the key symbols will be stored.
  * @param keys_size The size of the `out_keys` buffer.
  * 
- * @return - `0` The conversion was succesful.
- * @return - `-1` The conversion was completed, but one or more key names were
+ * @return - `0` - The conversion was succesful.
+ * @return - `-1` - The conversion was completed, but one or more key names were
  * invalid.
  * 
  * @note - This function treats key names case-insensitively.
  */
 int x_key_names_to_symbols(char *names, const char delimiter, int *out_keys, int keys_size);
+
+/**
+ * Queries the children of a window recursively.
+ * 
+ * @param display The X11 display.
+ * @param parent The parent window.
+ * @param out_children The buffer where the children will be stored.
+ * @param out_children_count The buffer where the children count will be stored.
+ * 
+ * @return - `0` - The query was completed succesfully.
+ * @return - `-1` - The query failed, memory allocation error.
+ * 
+ * @warning - Recursive X server calls make this function slow and 
+ * resource-intensive.
+ */
+int x_query_tree_recursively(Display *display, Window parent, Window **out_children, unsigned int *out_children_count);
+
+/**
+ * Checks if a window is a top-level window.
+ * 
+ * A top-level window, according to the ICCCM standard, is a window that has the
+ * root window as its parent and is not an override-redirect window.
+ * 
+ * @param display The X11 display.
+ * @param window The window to check.
+ * 
+ * @return - `true` - The window is a top-level window.
+ * @return - `false` - The window is not a top-level window.
+ */
+bool x_window_is_top_level(Display *display, Window window);
+
+/**
+ * A wrapper of the `XCreateSimpleWindow()` Xlib function, with some minor
+ * additional functionality.
+ * 
+ * The difference between this function and `XCreateSimpleWindow()` is that this
+ * function also sets the `_NET_WM_PID` property to the window, containing the 
+ * process ID of the X client that created the window.
+ * 
+ * @param display The X11 display.
+ * @param parent The parent window.
+ * @param x The X coordinate of the window.
+ * @param y The Y coordinate of the window.
+ * @param width The width of the window.
+ * @param height The height of the window.
+ * @param border_width The border width of the window.
+ * @param border_pixel The border pixel of the window.
+ * @param background The background color of the window.
+ * 
+ * @return The created window.
+ */
+Window x_create_simple_window(
+    Display *display,
+    Window parent,
+    int x, int y,
+    unsigned int width, unsigned int height,
+    unsigned int border_width, unsigned long border_pixel,
+    unsigned long background
+);
+
+/**
+ * Retrieves the transient-for window hint for a given window.
+ *
+ * @param display The X11 display.
+ * @param window The window to query.
+ * @param out_transient_for Pointer to store the transient-for window.
+ *
+ * @return - `0` - Success, the window is transient for another window.
+ * @return - `-1` - The window is not transient (no WM_TRANSIENT_FOR hint).
+ *
+ * @note - Per ICCCM, transient windows (dialogs, popups) should be stacked
+ * above their parent window.
+ */
+int x_get_transient_for(Display *display, Window window, Window *out_transient_for);
+
+/**
+ * Checks if a window wants decorations based on _MOTIF_WM_HINTS.
+ *
+ * @param display The X11 display.
+ * @param window The window to query.
+ *
+ * @return - `true` - The window wants decorations (or no hint set).
+ * @return - `false` - The window explicitly requests no decorations.
+ */
+bool x_window_wants_decorations_motif(Display *display, Window window);
+
+/**
+ * Checks if a window wants decorations based on EWMH _NET_WM_WINDOW_TYPE.
+ *
+ * @param display The X11 display.
+ * @param window_type The window type atom from _NET_WM_WINDOW_TYPE.
+ *
+ * @return - `true` - The window type expects decorations.
+ * @return - `false` - The window type should not have decorations.
+ */
+bool x_window_wants_decorations_ewmh(Display *display, Atom window_type);
+
+/**
+ * Retrieves the window type from the _NET_WM_WINDOW_TYPE property.
+ *
+ * @param display The X11 display.
+ * @param window The window to query.
+ *
+ * @return - The first atom from _NET_WM_WINDOW_TYPE property.
+ * @return - _NET_WM_WINDOW_TYPE_NORMAL if the property is not set.
+ */
+Atom x_get_window_type(Display *display, Window window);

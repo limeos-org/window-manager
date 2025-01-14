@@ -2,8 +2,8 @@
 #include "../all.h"
 
 /**
- * Raises the portal to the foreground.
- * 
- * @param portal The portal to focus.
+ * Returns the currently focused portal.
+ *
+ * @return The focused portal, or NULL if no portal is focused.
  */
-void focus_portal(Portal *portal);
+Portal *get_focused_portal();

@@ -11,6 +11,15 @@ static int portal_start_width = 0, portal_start_height = 0;
 static int throttle_ms = 0;
 static Time last_resize_time = 0;
 
+bool is_portal_resize_area(Portal *portal, int rel_x, int rel_y)
+{
+    // Check if the position is within the bottom-right corner of the portal.
+    return (rel_x >= (int)portal->width - PORTAL_RESIZE_AREA_SIZE &&
+            rel_x <= (int)portal->width &&
+            rel_y >= (int)portal->height - PORTAL_RESIZE_AREA_SIZE &&
+            rel_y <= (int)portal->height);
+}
+
 static void start_resizing_portal(Portal *portal, int mouse_root_x, int mouse_root_y)
 {
     is_resizing = true;
@@ -19,6 +28,9 @@ static void start_resizing_portal(Portal *portal, int mouse_root_x, int mouse_ro
     portal_start_height = portal->height;
     mouse_start_root_x = mouse_root_x;
     mouse_start_root_y = mouse_root_y;
+
+    // Show the resizing cursor.
+    add_marker(string_to_id("resizing_portal"), XC_bottom_right_corner, true);
 }
 
 static void update_resizing_portal(int mouse_root_x, int mouse_root_y, Time event_time)
@@ -36,21 +48,8 @@ static void update_resizing_portal(int mouse_root_x, int mouse_root_y, Time even
         portal_start_height + (mouse_root_y - mouse_start_root_y)
     );
 
-    // Update portal struct with new width and height.
-    resized_portal->width = new_portal_width;
-    resized_portal->height = new_portal_height;
-
-    // Resize the frame and client windows.
-    XResizeWindow(
-        resized_portal->display,
-        resized_portal->frame_window,
-        new_portal_width, new_portal_height
-    );
-    XResizeWindow(
-        resized_portal->display,
-        resized_portal->client_window,
-        new_portal_width, new_portal_height - PORTAL_TITLE_BAR_HEIGHT
-    );
+    // Resize the portal using the existing function.
+    resize_portal(resized_portal, new_portal_width, new_portal_height);
 
     // Update the last resize time, so we can throttle the next update.
     last_resize_time = event_time;
@@ -60,38 +59,15 @@ static void stop_resizing_portal()
 {
     // Disable resizing.
     is_resizing = false;
+    resized_portal = NULL;
 
-    // Notify the client window of the new size.
-    if (resized_portal == NULL || resized_portal->client_window == 0) return;
-    XConfigureEvent configure_event = {
-        .type = ConfigureNotify,
-        .display = resized_portal->display,
-        .event = resized_portal->client_window,
-        .window = resized_portal->client_window,
-        .x = resized_portal->x,
-        .y = resized_portal->y,
-        .width = resized_portal->width,
-        .height = resized_portal->height - PORTAL_TITLE_BAR_HEIGHT,
-        .border_width = 0,
-        .above = None,
-        .override_redirect = False
-    };
-    XSendEvent(
-        resized_portal->display,
-        resized_portal->client_window,
-        False,
-        StructureNotifyMask,
-        (XEvent *)&configure_event
-    );
+    // Hide the resizing cursor.
+    remove_marker(string_to_id("resizing_portal"));
 }
 
-static bool is_portal_resize_area(Portal *portal, int mouse_rel_x, int mouse_rel_y)
+bool is_portal_resizing()
 {
-    // Check if the mouse is within the bottom-right corner of the portal.
-    return (mouse_rel_x >= (int)portal->width - PORTAL_RESIZE_AREA_SIZE && 
-            mouse_rel_x <= (int)portal->width &&
-            mouse_rel_y >= (int)portal->height - PORTAL_RESIZE_AREA_SIZE && 
-            mouse_rel_y <= (int)portal->height);
+    return is_resizing;
 }
 
 HANDLE(Initialize)
@@ -101,24 +77,25 @@ HANDLE(Initialize)
     throttle_ms = framerate_to_throttle_ms(framerate);
 }
 
-HANDLE(GlobalButtonPress)
+HANDLE(PortalButtonPress)
 {
-    XButtonEvent *_event = &event->xbutton;
+    PortalButtonPressEvent *_event = &event->portal_button_press;
 
     if (_event->button != Button1) return;
     if (is_resizing == true) return;
 
-    Portal *portal = find_portal(_event->window);
-    if(portal == NULL) return;
+    Portal *portal = _event->portal;
+    if (portal == NULL) return;
 
-    if(!is_portal_resize_area(portal, _event->x, _event->y)) return;
+    // Ensure we're clicking on the resize area.
+    if (is_portal_resize_area(portal, _event->x_portal, _event->y_portal) == false) return;
 
     start_resizing_portal(portal, _event->x_root, _event->y_root);
 }
 
-HANDLE(GlobalButtonRelease)
+HANDLE(RawButtonRelease)
 {
-    XButtonEvent *_event = &event->xbutton;
+    RawButtonReleaseEvent *_event = &event->raw_button_release;
 
     if (_event->button != Button1) return;
     if (is_resizing == false) return;
@@ -126,31 +103,51 @@ HANDLE(GlobalButtonRelease)
     stop_resizing_portal();
 }
 
-HANDLE(GlobalMotionNotify)
+HANDLE(RawMotionNotify)
 {
-    XMotionEvent *_event = &event->xmotion;
+    Display *display = DefaultDisplay;
+    Window root_window = DefaultRootWindow(display);
 
-    if (is_resizing == false) return;
+    // Get the current pointer position since RawMotionNotify doesn't include it.
+    int pointer_x_root = 0, pointer_y_root = 0;
+    Window child_window = None;
+    XQueryPointer(
+        display,            // Display
+        root_window,        // Window
+        &(Window){0},       // Root (Unused)
+        &child_window,      // Child
+        &pointer_x_root,    // Pointer X (Relative to root)
+        &pointer_y_root,    // Pointer Y (Relative to root)
+        &(int){0},          // Window X (Unused)
+        &(int){0},          // Window Y (Unused)
+        &(unsigned int){0}  // Mask (Unused)
+    );
 
-    update_resizing_portal(_event->x_root, _event->y_root, _event->time);
-}
-
-HANDLE(GlobalMotionNotify)
-{
-    XMotionEvent *_event = &event->xmotion;
-
-    // Determine whether the mouse is in the resize area of a portal.
-    Portal* portal = find_portal(_event->window);
-    bool is_in_resize_area = portal != NULL && is_portal_resize_area(portal, _event->x, _event->y);
-
-    // Update the marker.
-    unsigned int marker_id = string_to_id("resizing_portal");
-    if (is_in_resize_area || is_resizing)
+    // Handle active resizing.
+    if (is_resizing)
     {
-        add_marker(display, marker_id, XC_bottom_right_corner, true);
+        Time current_time = x_get_current_time();
+        update_resizing_portal(pointer_x_root, pointer_y_root, current_time);
+        return;
+    }
+
+    // Handle hover cursor for resize area.
+    Portal *portal = find_portal_by_window(child_window);
+    bool in_resize_area = false;
+    if (portal != NULL && is_portal_frame_valid(portal))
+    {
+        int rel_x = pointer_x_root - portal->x_root;
+        int rel_y = pointer_y_root - portal->y_root;
+        in_resize_area = is_portal_resize_area(portal, rel_x, rel_y);
+    }
+
+    // Create or remove the resize marker as needed.
+    if (in_resize_area)
+    {
+        add_marker(string_to_id("hover_resize"), XC_bottom_right_corner, true);
     }
     else
     {
-        remove_marker(display, marker_id);
+        remove_marker(string_to_id("hover_resize"));
     }
 }

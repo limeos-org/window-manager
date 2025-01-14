@@ -1,6 +1,24 @@
 #pragma once
 #include "../all.h"
 
+/** The boolean true value. */
+#ifdef true
+    #undef true
+#endif
+#define true 1
+
+/** The boolean false value. */
+#ifdef false
+    #undef false
+#endif
+#define false 0
+
+/** A no-op macro for creating labeled scopes to group related code blocks. */
+#ifdef scope
+    #undef scope
+#endif
+#define scope /**/
+
 /**
  * Checks if a shared library is available. 
  * 
@@ -21,9 +39,10 @@ bool is_library_available(const char *name);
  * @param delimiter The delimiter to split the string by.
  * @param out_count Pointer to an integer to store the token count, or `NULL`.
  * 
- * @return A null-terminated array of strings, or `NULL` on failure.
+ * @return - `char**` - A null-terminated array of strings
+ * @return - `NULL` - The string could not be split.
  * 
- * @warning The caller is responsible for freeing the memory allocated for the
+ * @warning - The caller is responsible for freeing the memory allocated for the
  * returned array and its elements.
  */
 char** split_string(const char* string, const char* delimiter, int* out_count);
@@ -73,9 +92,12 @@ unsigned long rgba_to_hex(double r, double g, double b, double a);
  * Converts a hexadecimal color value to RGB components.
  *
  * @param hex The hexadecimal representation of the color.
- * @param r Pointer to the red channel, where the result will be stored, in the range [0.0, 1.0].
- * @param g Pointer to the green channel, where the result will be stored, in the range [0.0, 1.0].
- * @param b Pointer to the blue channel, where the result will be stored, in the range [0.0, 1.0].
+ * @param r Pointer to the red channel, where the result will be stored,
+ * in the range [0.0, 1.0].
+ * @param g Pointer to the green channel, where the result will be stored, 
+ * in the range [0.0, 1.0].
+ * @param b Pointer to the blue channel, where the result will be stored,
+ * in the range [0.0, 1.0].
  */
 void hex_to_rgb(unsigned long hex, double *r, double *g, double *b);
 
@@ -83,22 +105,30 @@ void hex_to_rgb(unsigned long hex, double *r, double *g, double *b);
  * Converts a hexadecimal color value to RGBA components.
  *
  * @param hex The hexadecimal representation of the color.
- * @param r Pointer to the red channel, where the result will be stored, in the range [0.0, 1.0].
- * @param g Pointer to the green channel, where the result will be stored, in the range [0.0, 1.0].
- * @param b Pointer to the blue channel, where the result will be stored, in the range [0.0, 1.0].
- * @param a Pointer to the alpha channel, where the result will be stored, in the range [0.0, 1.0].
+ * @param r Pointer to the red channel, where the result will be stored, 
+ * in the range [0.0, 1.0].
+ * @param g Pointer to the green channel, where the result will be stored, 
+ * in the range [0.0, 1.0].
+ * @param b Pointer to the blue channel, where the result will be stored, 
+ * in the range [0.0, 1.0].
+ * @param a Pointer to the alpha channel, where the result will be stored, 
+ * in the range [0.0, 1.0].
  */
 void hex_to_rgba(unsigned long hex, double *r, double *g, double *b, double *a);
 
 /**
- * Expands a path by replacing the leading tilde (~) with the user's home directory.
+ * Expands a path by replacing the leading tilde (~) with the user's home 
+ * directory.
  *
- * @param path A pointer to the null-terminated string representing the path to be expanded.
- * @param expanded_path A pointer to the buffer where the expanded path will be stored.
+ * @param path A pointer to the null-terminated string representing the path to 
+ * be expanded.
+ * @param expanded_path A pointer to the buffer where the expanded path will be 
+ * stored.
  * @param size The size of the buffer pointed to by expanded_path.
  *
- * @return - `0` Execution was successful.
- * @return - `-1` An error occurred (e.g. HOME env var not set or buffer too small).
+ * @return - `0` - Execution was successful.
+ * @return - `-1` - An error occurred (e.g. HOME env var not set or buffer too 
+ * small).
  */
 int expand_path(const char *path, char *expanded_path, size_t size);
 

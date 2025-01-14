@@ -1,12 +1,14 @@
-CC = gcc
-CFLAGS = -Wall -Wextra
-LIBS = -lX11 -lXi -lcairo
+CC = clang
+CFLAGS = -Wall -Wextra -g
+LIBS = -lX11 -lXcomposite -lXi -lXrandr -lXfixes -lcairo
+
+# Build Configuration
 
 SRCDIR = src
 OBJDIR = obj
 BINDIR = bin
 
-TARGET = $(BINDIR)/lime-os-window-manager
+TARGET = $(BINDIR)/limeos-window-manager
 
 SOURCES = $(shell find $(SRCDIR) -name '*.c')
 OBJECTS = $(SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
@@ -26,5 +28,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c
 
 clean:
 	rm -rf $(OBJDIR) $(BINDIR)
+
+# Special Directives
 
 .PHONY: all clean

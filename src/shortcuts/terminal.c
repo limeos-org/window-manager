@@ -34,15 +34,10 @@ HANDLE(Initialize)
 
 HANDLE(ShortcutPressed)
 {
-    XClientMessageEvent *_event = &event->xclient;
-
-    // Get shortcut name from event data.
-    char shortcut_name[MAX_SHORTCUT_NAME];
-    strncpy(shortcut_name, (const char*)_event->data.b, MAX_SHORTCUT_NAME - 1);
-    shortcut_name[MAX_SHORTCUT_NAME - 1] = '\0';
+    ShortcutPressedEvent *_event = &event->shortcut_pressed;
 
     // Ensure we're handling the terminal shortcut.
-    if (strcmp(shortcut_name, CFG_KEY_TERMINAL_SHORTCUT) != 0) return;
-    
+    if (strcmp(_event->name, CFG_KEY_TERMINAL_SHORTCUT) != 0) return;
+
     handle_terminal_shortcut();
 }

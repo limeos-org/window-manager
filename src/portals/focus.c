@@ -1,33 +1,38 @@
 #include "../all.h"
 
-void focus_portal(Portal *portal)
+static Portal *last_focused_portal = NULL;
+
+Portal *get_focused_portal()
 {
-    Display *display = portal->display;
-    Window frame_window = portal->frame_window;
-
-    // Raise the frame window and set input focus to it.
-    XRaiseWindow(display, frame_window);
-    XSetInputFocus(display, frame_window, RevertToParent, CurrentTime);
-
-    // Invoke the PortalFocused event.
-    XEvent event;
-    event.xclient.type = ClientMessage;
-    event.xclient.display = display;
-    event.xclient.window = DefaultRootWindow(display);
-    event.xclient.message_type = XInternAtom(display, "_WM_PORTAL_FOCUSED", False);
-    event.xclient.format = 32;
-    event.xclient.data.l[0] = (long)portal;
-    invoke_event_handlers(display, DefaultRootWindow(display), PortalFocused, &event);
+    return last_focused_portal;
 }
 
-HANDLE(GlobalButtonPress)
+HANDLE(PortalButtonPress)
 {
-    XButtonEvent *_event = &event->xbutton;
+    PortalButtonPressEvent *_event = &event->portal_button_press;
+    Portal *portal = _event->portal;
 
-    if (_event->button != Button1) return;
+    // Ensure the portal hasn't already been focused, preventing
+    // unnecessary code execution.
+    if (last_focused_portal == portal) return;
 
-    Portal *portal = find_portal(_event->window);
-    if(portal == NULL) return;
-    
-    focus_portal(portal);
+    // Set input focus on the portal client window.
+    XSetInputFocus(
+        DefaultDisplay,         // Display
+        portal->client_window,  // Window
+        RevertToParent,         // Revert To
+        CurrentTime             // Time
+    );
+
+    // Raise the portal windows.
+    raise_portal(portal);
+
+    // Store the last focused portal.
+    last_focused_portal = portal;
+
+    // Call all event handlers of the PortalFocused event.
+    call_event_handlers((Event*)&(PortalFocusedEvent){
+        .type = PortalFocused,
+        .portal = portal
+    });
 }

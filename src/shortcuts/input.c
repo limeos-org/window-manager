@@ -1,11 +1,20 @@
 #include "../all.h"
 
-static int shortcut_input[MAX_SHORTCUT_KEYS];
+static int shortcut_input[MAX_SHORTCUT_KEYS] = {0};
+
+__attribute__((unused))
+static void clear_shortcut_input()
+{
+    for (int i = 0; i < MAX_SHORTCUT_KEYS; i++)
+    {
+        shortcut_input[i] = 0;
+    }
+}
 
 static void add_key_to_shortcut_input(int key)
 {
     // Ensure the shortcut_input array is not full.
-    if(shortcut_input[MAX_SHORTCUT_KEYS - 1] != 0) return;
+    if (shortcut_input[MAX_SHORTCUT_KEYS - 1] != 0) return;
 
     // Add the key to the shortcut_input array.
     for (int i = 0; i < MAX_SHORTCUT_KEYS; i++)
@@ -42,7 +51,7 @@ static bool is_key_in_shortcut_input(int key)
     return false;
 }
 
-static void check_shortcut_input(Display *display)
+static void check_shortcut_input()
 {
     // Check if the current shortcut input matches any registered shortcuts.
     char shortcut_name[MAX_SHORTCUT_NAME];
@@ -53,31 +62,34 @@ static void check_shortcut_input(Display *display)
     }
 
     // Invoke the ShortcutPressed event.
-    XEvent event;
-    event.xclient.type = ClientMessage;
-    event.xclient.display = display;
-    event.xclient.window = DefaultRootWindow(display);
-    event.xclient.message_type = XInternAtom(display, "_WM_SHORTCUT_PRESSED", False);
-    event.xclient.format = 8;
-    strncpy(event.xclient.data.b, shortcut_name, sizeof(event.xclient.data.b));
-    invoke_event_handlers(display, DefaultRootWindow(display), ShortcutPressed, &event);
+    call_event_handlers((Event*)&(ShortcutPressedEvent){
+        .type = ShortcutPressed,
+        .name = shortcut_name
+    });
 }
 
-HANDLE(GlobalKeyPress)
+HANDLE(RawKeyPress)
 {
-    XKeyPressedEvent *_event = &event->xkey;
-    KeySym key = XkbKeycodeToKeysym(display, _event->keycode, 0, 0);
+    RawKeyPressEvent *_event = &event->raw_key_press;
+    Display *display = DefaultDisplay;
 
-    if(is_key_in_shortcut_input(key)) return;
+    // Convert keycode to keysym.
+    KeySym key = XkbKeycodeToKeysym(display, _event->key_code, 0, 0);
+
+    if (is_key_in_shortcut_input(key)) return;
     add_key_to_shortcut_input(key);
-    check_shortcut_input(display);
+    check_shortcut_input();
 }
 
-HANDLE(GlobalKeyRelease)
+HANDLE(RawKeyRelease)
 {
-    XKeyReleasedEvent *_event = &event->xkey;
-    KeySym key = XkbKeycodeToKeysym(display, _event->keycode, 0, 0);
+    RawKeyReleaseEvent *_event = &event->raw_key_release;
+    Display *display = DefaultDisplay;
 
-    if(!is_key_in_shortcut_input(key)) return;
+    // Convert keycode to keysym.
+    KeySym key = XkbKeycodeToKeysym(display, _event->key_code, 0, 0);
+
+    if (!is_key_in_shortcut_input(key)) return;
     remove_key_from_shortcut_input(key);
 }
+

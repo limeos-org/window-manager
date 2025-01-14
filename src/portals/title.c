@@ -30,19 +30,20 @@ void draw_portal_title(Portal *portal)
 HANDLE(PropertyNotify)
 {
     XPropertyEvent *_event = &event->xproperty;
+    Display *display = DefaultDisplay;
 
     // Ensure the property change is related to a portal.
-    Portal *portal = find_portal(_event->window);
-    if(portal == NULL) return;
+    Portal *portal = find_portal_by_window(_event->window);
+    if (portal == NULL) return;
 
     // Ensure the property change is related to the window title.
-    Atom net_wm_name = XInternAtom(display, "_NET_WM_NAME", False);
-    Atom wm_name = XInternAtom(display, "WM_NAME", False);
-    if (_event->atom != wm_name && _event->atom != net_wm_name) return;
+    Atom _NET_WM_NAME = XInternAtom(display, "_NET_WM_NAME", False);
+    Atom WM_NAME = XInternAtom(display, "WM_NAME", False);
+    if (_event->atom != WM_NAME && _event->atom != _NET_WM_NAME) return;
 
     // Retrieve the client window title, and update the portal title.
     char title[256];
-    if(x_get_window_name(display, portal->client_window, title, sizeof(title)) == 0)
+    if (x_get_window_name(display, portal->client_window, title, sizeof(title)) == 0)
     {
         set_portal_title(portal, title);
         draw_portal_frame(portal);

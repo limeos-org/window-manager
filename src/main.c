@@ -3,8 +3,29 @@
 static const char *libraries[] = {
     "libX11.so.6",
     "libXi.so.6",
-    "libcairo.so.2"
+    "libXfixes.so.3",
+    "libXrandr.so.2",
+    "libXcomposite.so.1",
+    "libcairo.so.2",
 };
+
+static int custom_x_error_handler(Display *display, XErrorEvent *error)
+{
+    // Ignore BadWindow errors.
+    if (error->error_code == BadWindow) return 0;
+
+    // Retrieve the error text.
+    char error_text[1024];
+    XGetErrorText(display, error->error_code, error_text, sizeof(error_text));
+
+    // Log the error.
+    LOG_ERROR(
+        "%s (request: %d, resource: 0x%lx)",
+        error_text, error->request_code, error->resourceid
+    );
+
+    return 0;
+}
 
 int main()
 {
@@ -33,11 +54,17 @@ int main()
         exit(EXIT_FAILURE);
     }
 
-    // Assign a custom error handler to Xlib.
-    XSetErrorHandler(x_error_handler);
+    // Set the default X11 display.
+    x_set_default_display(display);
+
+    // Set input focus on the root window.
+    XSetInputFocus(display, DefaultRootWindow(display), RevertToParent, CurrentTime);
+
+    // Set a custom X11 error handler.
+    XSetErrorHandler(custom_x_error_handler);
 
     // Initialize the event loop.
-    initialize_event_loop(display, DefaultRootWindow(display));
+    initialize_event_loop();
     
     return 0;
 }

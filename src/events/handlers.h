@@ -1,40 +1,73 @@
 #pragma once
 #include "../all.h"
 
-// Macros for declaring and registering event handlers.
-#define EVENT_HANDLER_PARAMS \
-    __attribute__((unused)) XEvent *event, \
-    __attribute__((unused)) Display *display, \
-    __attribute__((unused)) Window root_window
-#define HANDLE_IMPLEMENTATION(type, line, count) \
-    void handler_##type##line##count(EVENT_HANDLER_PARAMS); \
-    void register_handler_##type##line##count() __attribute__((constructor)); \
-    void register_handler_##type##line##count() { \
-        register_event_handler(type, &handler_##type##line##count); \
+/**
+ * A macro that acts as the final expansion stage of the `HANDLE()` macro. 
+ * 
+ * It declares two functions: a registration function with the constructor
+ * attribute, making it run automatically without needing to be called, and an 
+ * event handler callback function.
+ * 
+ * It then defines the implementations of these two functions: the registration 
+ * function registers the event handler, and the event handler callback function
+ * is left empty, to be filled in by the user.
+ * 
+ * @param type The event type.
+ * @param count The counter value.
+ * 
+ * @warning Don't use directly! Use the `HANDLE()` macro instead.
+ */
+#define HANDLE_IMPLEMENTATION(type, count) \
+    static void register_handler_##type##_##count() __attribute__((constructor)); \
+    static void handler_##type##_##count(__attribute__((unused)) Event *event); \
+    static void register_handler_##type##_##count() \
+    { \
+        register_event_handler(type, &handler_##type##_##count); \
     } \
-    void handler_##type##line##count(EVENT_HANDLER_PARAMS)
-#define HANDLE_EXPANDED(type, line, count) HANDLE_IMPLEMENTATION(type, line, count)
-#define HANDLE(type) HANDLE_EXPANDED(type, __LINE__, __COUNTER__)
+    static void handler_##type##_##count(__attribute__((unused)) Event *event)
 
-// Event handler callback function signature.
-typedef void EventHandler(XEvent *event, Display *display, Window root_window);
+/**
+ * A macro that acts as the intermediary expansion stage of the `HANDLE()`
+ * macro.
+ * 
+ * It adds the `count` parameter, used to prevent naming collisions.
+ * 
+ * @param type The event type.
+ * @param count The counter value.
+ * 
+ * @warning Don't use directly! Use the `HANDLE()` macro instead.
+ */
+#define HANDLE_EXPANDED(type, count) HANDLE_IMPLEMENTATION(type, count)
+
+/**
+ * A macro that simplifies the process of creating and registering event
+ * handlers.
+ * 
+ * @param type The event type.
+ */
+#define HANDLE(type) HANDLE_EXPANDED(type, __COUNTER__)
+
+/**
+ * Event handler callback function signature.
+ * 
+ * @param event The event structure.
+ */
+typedef void EventCallback(Event *event);
 
 /**
  * Registers an event handler for a given event type.
  * 
- * @param event_type The type of event to register the handler for.
- * @param event_handler The event handler callback function.
+ * @param type The event type.
+ * @param callback The event handler callback function.
  * 
  * @warning Don't use directly! Use the `HANDLE()` macro instead.
  */
-void register_event_handler(int event_type, EventHandler *event_handler);
+void register_event_handler(int type, EventCallback *callback);
 
 /**
- * Invokes all registered event handlers for a given event type.
+ * Calls all registered event handler callback functions for a given event type.
  * 
- * @param display The X11 display.
- * @param window The X11 window where the event occurred.
- * @param event_type The type of event that occurred.
- * @param event The event data, can be `NULL` for custom events.
+ * @param event The event structure, where the `type` field is used to determine
+ * which event handlers to call.
  */
-void invoke_event_handlers(Display *display, Window window, int event_type, XEvent *event);
+void call_event_handlers(Event *event);

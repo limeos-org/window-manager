@@ -1,99 +1,66 @@
 #include "../all.h"
 
-static const long client_event_mask =
-    PropertyChangeMask;
-
-static void handle_portal_client_config(Portal *portal, XConfigureRequestEvent *event)
-{
-    // Only handle initial client configuration requests. Once the client
-    // is mapped, thus belonging to a portal, we ignore further requests.
-    if(portal != NULL) return;
-
-    // Apply the configuration changes exactly as requested by the client.
-    XWindowChanges changes;
-    changes.x = event->x;
-    changes.y = event->y;
-    changes.width = event->width;
-    changes.height = event->height;
-    changes.border_width = event->border_width;
-    changes.sibling = event->above;
-    changes.stack_mode = event->detail;
-    XConfigureWindow(
-        event->display,
-        event->window,
-        event->value_mask,
-        &changes
-    );
-}
-
-bool is_portal_client_area(Portal *portal, int rel_x, int rel_y)
-{
-    (void)portal, (void)rel_x;
-    return rel_y > PORTAL_TITLE_BAR_HEIGHT;
-}
-
 bool is_portal_client_valid(Portal *portal)
 {
     return (
         portal != NULL &&
         portal->client_window != 0 &&
-        x_window_exists(portal->display, portal->client_window)
+        x_window_exists(DefaultDisplay, portal->client_window)
     );
 }
 
 int destroy_portal_client(Portal *portal)
 {
-    if (!is_portal_client_valid(portal))
-    {
-        return -1;
-    }
-
-    Display *display = portal->display;
+    Display *display = DefaultDisplay;
     Window client_window = portal->client_window;
 
-    // Try to gracefully close via the `WM_DELETE_WINDOW` protocol, fallback to
-    // `XDestroyWindow()` if protocol is unsupported.
-    Atom wm_protocols = XInternAtom(display, "WM_PROTOCOLS", False);
-    Atom wm_delete_window = XInternAtom(display, "WM_DELETE_WINDOW", False);
-    if(x_window_supports_protocol(display, client_window, wm_delete_window))
+    // Try to gracefully close via the `WM_DELETE_WINDOW` protocol (Newer),
+    // fallback to `XDestroyWindow()` if protocol is unsupported (Older).
+    Atom WM_PROTOCOLS = XInternAtom(display, "WM_PROTOCOLS", False);
+    Atom WM_DELETE_WINDOW = XInternAtom(display, "WM_DELETE_WINDOW", False);
+    if(x_window_supports_protocol(display, client_window, WM_DELETE_WINDOW))
     {
-        XEvent event;
-        event.xclient.type = ClientMessage;
-        event.xclient.window = client_window;
-        event.xclient.message_type = wm_protocols;
-        event.xclient.format = 32;
-        event.xclient.data.l[0] = wm_delete_window;
-        event.xclient.data.l[1] = CurrentTime;
-
-        int status = XSendEvent(display, client_window, False, NoEventMask, &event);
-        if (status == 0) return -2;
+        int status = XSendEvent(display, client_window, False, NoEventMask, (XEvent*)&(XClientMessageEvent) {
+            .type = ClientMessage,
+            .window = client_window,
+            .message_type = WM_PROTOCOLS,
+            .format = 32,
+            .data.l[0] = WM_DELETE_WINDOW,
+            .data.l[1] = CurrentTime
+        });
+        if (status == 0) return -1;
     }
     else
     {
         int status = XDestroyWindow(display, client_window);
-        if (status == 0) return -3;
-
-        // Client was destroyed immediately, so we can clear the client window
-        // reference from the portal.
+        if (status == 0) return -2;
         portal->client_window = 0;
     }
 
     return 0;
 }
 
-HANDLE(MapRequest)
+HANDLE(CreateNotify)
 {
-    XMapRequestEvent *_event = &event->xmaprequest;
+    Display *display = DefaultDisplay;
+    Window root_window = DefaultRootWindow(display);
+    XCreateWindowEvent *_event = &event->xcreatewindow;
 
-    // Considering a MapRequest event can only be sent by clients, we can
-    // safely assume that the window is a client window.
-    Window client_window = _event->window;
+    // Ensure the window isn't an off-screen dummy window.
+    if (_event->x < 0 || _event->y < 0) return;
 
-    // Choose which client window events we should listen for.
-    XSelectInput(display, client_window, client_event_mask);
+    // Ensure the window wasn't created by ourselves.
+    pid_t pid = x_get_window_pid(display, _event->window);
+    if (pid == getpid()) return;
 
-    // Create a portal for the client window.
-    create_portal(display, client_window);
+    // Only create portals for top-level windows (direct children of root).
+    // Per ICCCM Section 4.1.1, top-level windows are direct children of root.
+    // Child windows of applications should not become portals.
+    Window parent_window = x_get_window_parent(display, _event->window);
+    if (parent_window != root_window) return;
+
+    // Create a portal for the window.
+    create_portal(_event->window);
 }
 
 HANDLE(DestroyNotify)
@@ -101,11 +68,23 @@ HANDLE(DestroyNotify)
     XDestroyWindowEvent *_event = &event->xdestroywindow;
 
     // Ensure the event came from a portal client window.
-    Portal *portal = find_portal(_event->window);
-    if (portal == NULL || _event->window != portal->client_window) return;
+    Portal *portal = find_portal_by_window(_event->window);
+    if (portal == NULL || portal->client_window != _event->window) return;
 
     // Destroy the portal.
     destroy_portal(portal);
+}
+
+HANDLE(MapRequest)
+{
+    XMapRequestEvent *_event = &event->xmaprequest;
+
+    // Ensure the event came from a portal client window.
+    Portal *portal = find_portal_by_window(_event->window);
+    if (portal == NULL || portal->client_window != _event->window) return;
+
+    // Map all portal windows.
+    map_portal(portal);
 }
 
 HANDLE(MapNotify)
@@ -113,8 +92,8 @@ HANDLE(MapNotify)
     XMapEvent *_event = &event->xmap;
 
     // Ensure the event came from a portal client window.
-    Portal *portal = find_portal(_event->window);
-    if (portal == NULL || _event->window != portal->client_window) return;
+    Portal *portal = find_portal_by_window(_event->window);
+    if (portal == NULL || portal->client_window != _event->window) return;
 
     // Map all portal windows.
     map_portal(portal);
@@ -125,8 +104,8 @@ HANDLE(UnmapNotify)
     XUnmapEvent *_event = &event->xunmap;
 
     // Ensure the event came from a portal client window.
-    Portal *portal = find_portal(_event->window);
-    if (portal == NULL || _event->window != portal->client_window) return;
+    Portal *portal = find_portal_by_window(_event->window);
+    if (portal == NULL || portal->client_window != _event->window) return;
 
     // Unmap all portal windows.
     unmap_portal(portal);
@@ -135,12 +114,69 @@ HANDLE(UnmapNotify)
 HANDLE(ConfigureRequest)
 {
     XConfigureRequestEvent *_event = &event->xconfigurerequest;
-
-    // Considering a ConfigureRequest event can only be sent by clients, we can
-    // safely assume that the window is a client window.
+    Display *display = DefaultDisplay;
     Window client_window = _event->window;
 
-    // Handle the client configuration request.
-    Portal *portal = find_portal(client_window);
-    handle_portal_client_config(portal, _event);
+    // Either apply the configuration to the portal, or directly to the
+    // client window, depending on whether the portal is framed.
+    Portal *portal = find_portal_by_window(client_window);
+    if (portal != NULL && is_portal_frame_valid(portal))
+    {
+        // For framed portals, the client window position is fixed within the
+        // frame. Only allow resize requests, and resize the whole portal.
+        if (_event->value_mask & (CWWidth | CWHeight))
+        {
+            unsigned int new_width = (_event->value_mask & CWWidth) ?
+                _event->width : portal->width;
+            unsigned int new_height = (_event->value_mask & CWHeight) ?
+                _event->height + PORTAL_TITLE_BAR_HEIGHT : portal->height;
+            resize_portal(portal, new_width, new_height);
+        }
+
+        // Send a synthetic ConfigureNotify to inform the client of its actual
+        // geometry, as required by ICCCM.
+        XSendEvent(display, client_window, False, StructureNotifyMask, (XEvent*)&(XConfigureEvent) {
+            .type = ConfigureNotify,
+            .display = display,
+            .event = client_window,
+            .window = client_window,
+            .x = portal->x_root,
+            .y = portal->y_root + PORTAL_TITLE_BAR_HEIGHT,
+            .width = portal->width,
+            .height = max(1, portal->height - PORTAL_TITLE_BAR_HEIGHT),
+            .border_width = 0,
+            .above = None,
+            .override_redirect = False
+        });
+    }
+    else
+    {
+        // For non-framed windows, apply configuration changes as requested.
+        XConfigureWindow(
+            display,
+            client_window,
+            _event->value_mask,
+            &(XWindowChanges) {
+                .x = _event->x,
+                .y = _event->y,
+                .width = _event->width,
+                .height = _event->height,
+                .border_width = _event->border_width,
+                .sibling = _event->above,
+                .stack_mode = _event->detail
+            }
+        );
+    }
+}
+
+HANDLE(ConfigureNotify)
+{
+    XConfigureEvent *_event = &event->xconfigure;
+
+    // Ensure the event came from a portal client window.
+    Portal *portal = find_portal_by_window(_event->window);
+    if (portal == NULL || _event->window != portal->client_window) return;
+
+    // Synchronize the portal geometry.
+    synchronize_portal(portal);
 }

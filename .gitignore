@@ -1,6 +1,7 @@
 # Ignore object and binary files
 obj/
 bin/
+tmp/
 
 # Ignore editor and system files
 *.swp

@@ -1,216 +1,687 @@
 #include "../all.h"
 
-Portal *portals = NULL;
-int portals_count = 0;
+typedef struct {
+    Portal *unsorted;
+    Portal **sorted;
+    unsigned int count;
+    unsigned int capacity;
+} PortalRegistry;
 
-static Portal *register_portal(
-    Display *display,
-    const char *title,
-    Window frame_window,
-    cairo_t *frame_cr,
-    Window client_window,
-    int x, int y,
-    unsigned int width, unsigned int height
-)
+static PortalRegistry registry = {
+    .unsorted = NULL,
+    .sorted = NULL,
+    .count = 0,
+    .capacity = 0
+};
+
+Portal *create_portal(Window client_window)
 {
-    // Allocate additional memory for the portals registry.
-    Portal *buffer = realloc(portals, (portals_count + 1) * sizeof(Portal));
-    portals = buffer;
+    // Choose which client window events we should listen for.
+    XSelectInput(DefaultDisplay, client_window, SubstructureNotifyMask);
 
-    // Allocate memory for the title string.
-    char *allocated_title = strdup(title);
+    // Increase the portal count.
+    registry.count++;
 
-    // Set the new portal properties.
-    portals[portals_count].display = display;
-    portals[portals_count].title = allocated_title;
-    portals[portals_count].frame_window = frame_window;
-    portals[portals_count].frame_cr = frame_cr;
-    portals[portals_count].client_window = client_window;
-    portals[portals_count].x = x;
-    portals[portals_count].y = y;
-    portals[portals_count].width = width;
-    portals[portals_count].height = height;
-
-    portals_count++;
-
-    return &portals[portals_count - 1];
-}
-
-static void unregister_portal(Portal *portal)
-{
-    // Find the index of the portal in the array.
-    int index = -1;
-    for (int i = 0; i < portals_count; i++)
+    // Allocate additional memory, if neccessary.
+    if (registry.count > registry.capacity)
     {
-        if (&portals[i] == portal)
-        {
-            index = i;
-            break;
+        // Calculate the new capacity.
+        registry.capacity = registry.capacity == 0 ? 2 : registry.capacity * 2;
+
+        // Reallocate memory for the unsorted portals array.
+        Portal *new_unsorted = realloc(registry.unsorted, registry.capacity * sizeof(Portal));
+        if (new_unsorted == NULL) {
+            LOG_ERROR("Could not register portal, memory allocation failed.");
+            free(new_unsorted);
+            registry.count--;
+            return NULL;
         }
-    }
-    if (index == -1)
-    {
-        LOG_ERROR("Attempted to unregister a portal that could not be found in the registry.");
-        return;
-    }
+        registry.unsorted = new_unsorted;
 
-    // Free the allocated memory for the title.
-    free(portals[index].title);
-
-    // Shift all elements after the found index to the left.
-    for (int i = index; i < portals_count - 1; i++)
-    {
-        portals[i] = portals[i + 1];
+        // Reallocate memory for the sorted portals array.
+        Portal **new_sorted = realloc(registry.sorted, registry.capacity * sizeof(Portal *));
+        if (new_sorted == NULL) {
+            LOG_ERROR("Could not register portal, memory allocation failed.");
+            free(new_sorted);
+            registry.count--;
+            return NULL;
+        }
+        registry.sorted = new_sorted;
     }
 
-    // Resize the array to the new size.
-    portals_count--;
-    Portal *buffer = realloc(portals, (portals_count + 1) * sizeof(Portal));
-    portals = buffer;
-}
+    // Add the portal to the registry.
+    registry.unsorted[registry.count - 1] = (Portal){
+        .title = strdup("Untitled"),
+        .client_window_type = None,
+        .initialized = false,
+        .mapped = false,
+        .top_level = false,
+        .x_root = 0,
+        .y_root = 0,
+        .width = 1,
+        .height = 1,
+        .frame_window = None,
+        .frame_cr = NULL,
+        .client_window = client_window
+    };
 
-Portal *create_portal(Display *display, Window client_window)
-{
-    XWindowAttributes client_attr;
-    if(XGetWindowAttributes(display, client_window, &client_attr) == 0)
-    {
-        LOG_ERROR("Failed to get client window attributes while attempting to create a portal.");
-        return NULL;
-    }
+    // Store the portal in a variable for easier access.
+    Portal *portal = &registry.unsorted[registry.count - 1];
 
-    // Calculate the portal dimensions.
-    int portal_x = client_attr.x;
-    int portal_y = client_attr.y;
-    unsigned int portal_width = client_attr.width;
-    unsigned int portal_height = client_attr.height + PORTAL_TITLE_BAR_HEIGHT;
+    // Re-sort the portals.
+    sort_portals();
 
-    // Ensure that the portal dimensions are within the limits.
-    Screen *screen = DefaultScreenOfDisplay(display);
-    int screen_width = screen->width;
-    int screen_height = screen->height;
-    if(portal_width < MINIMUM_PORTAL_WIDTH)
-    {
-        portal_width = MINIMUM_PORTAL_WIDTH;
-    }
-    if(portal_height < MINIMUM_PORTAL_HEIGHT)
-    {
-        portal_height = MINIMUM_PORTAL_HEIGHT;
-    }
-    if(portal_width > screen_width * MAXIMUM_INITIAL_PORTAL_WIDTH_PERCENT)
-    {
-        portal_width = screen_width * MAXIMUM_INITIAL_PORTAL_WIDTH_PERCENT;
-    }
-    if(portal_height > screen_height * MAXIMUM_INITIAL_PORTAL_HEIGHT_PERCENT)
-    {
-        portal_height = screen_height * MAXIMUM_INITIAL_PORTAL_HEIGHT_PERCENT;
-    }
-    XResizeWindow(display, client_window, portal_width, portal_height - PORTAL_TITLE_BAR_HEIGHT);
-
-    // Get the client window name.
-    char title[256];
-    x_get_window_name(display, client_window, title, sizeof(title));
-
-    // Register the portal and create the frame.
-    Portal *portal = register_portal(
-        display,
-        title,
-        0, // frame_window, will be set later.
-        NULL, // frame_cr, will be set later.
-        client_window,
-        portal_x, portal_y,
-        portal_width, portal_height
-    );
-    create_portal_frame(portal, &portal->frame_window, &portal->frame_cr);
-    Window frame_window = portal->frame_window;
-
-    // Reparent the client window to the frame window.
-    XAddToSaveSet(display, client_window);
-    XReparentWindow(display, client_window, frame_window, 0, PORTAL_TITLE_BAR_HEIGHT);
-
-    // Map the frame and client windows.
-    map_portal(portal);
-
-    // Invoke the PortalCreated event.
-    XEvent event;
-    event.xclient.type = ClientMessage;
-    event.xclient.display = display;
-    event.xclient.window = DefaultRootWindow(display);
-    event.xclient.message_type = XInternAtom(display, "_WM_PORTAL_CREATED", False);
-    event.xclient.format = 32;
-    event.xclient.data.l[0] = (long)portal;
-    invoke_event_handlers(display, DefaultRootWindow(display), PortalCreated, &event);
+    // Call all event handlers of the PortalCreated event.
+    call_event_handlers((Event*)&(PortalCreatedEvent){
+        .type = PortalCreated,
+        .portal = portal
+    });
 
     return portal;
 }
 
 void destroy_portal(Portal *portal)
 {
-    Display *display = portal->display;
     Window client_window = portal->client_window;
     Window frame_window = portal->frame_window;
 
-    // Destroy the client window, client may refuse.
-    destroy_portal_client(portal);
-    if (is_portal_client_valid(portal)) 
+    // Destroy the client window.
+    if (is_portal_client_valid(portal))
     {
-        return; // Could not destroy client, don't proceed.
+        destroy_portal_client(portal);
+        if (is_portal_client_valid(portal)) return;
     }
 
     // Destroy the frame window.
-    destroy_portal_frame(portal);
-    if (is_portal_frame_valid(portal)) 
+    if (is_portal_frame_valid(portal))
     {
-        return; // Could not destroy frame, don't proceed.
+        destroy_portal_frame(portal);
+        if (is_portal_frame_valid(portal)) return;
     }
 
     // Unregister the portal.
-    unregister_portal(portal);
+    scope {
+        // Get the index of the portal in the registry.
+        int index = get_portal_index(portal);
+        if (index == -1)
+        {
+            LOG_ERROR(
+                "Could not unregister portal (%p), portal not found in registry.",
+                (void*)portal
+            );
+            return;
+        }
 
-    // Invoke the PortalDestroyed event.
-    XEvent event;
-    event.xclient.type = ClientMessage;
-    event.xclient.display = display;
-    event.xclient.window = DefaultRootWindow(display);
-    event.xclient.message_type = XInternAtom(display, "_WM_PORTAL_DESTROYED", False);
-    event.xclient.format = 32;
-    event.xclient.data.l[0] = (long)client_window;
-    event.xclient.data.l[1] = (long)frame_window;
-    invoke_event_handlers(display, DefaultRootWindow(display), PortalDestroyed, &event);
+        // Free the allocated memory for the title.
+        free(registry.unsorted[index].title);
+
+        // Overwrite target portal by shifting all subsequent portals.
+        for (int i = index; i < (int)registry.count - 1; i++)
+        {
+            registry.unsorted[i] = registry.unsorted[i + 1];
+        }
+
+        // Decrease the portal count.
+        registry.count--;
+    }
+
+    // Re-sort the portals.
+    sort_portals();
+
+    // Call all event handlers of the PortalDestroyed event.
+    call_event_handlers((Event*)&(PortalDestroyedEvent){
+        .type = PortalDestroyed,
+        .client_window = client_window,
+        .frame_window = frame_window
+    });
+}
+
+void initialize_portal(Portal *portal)
+{
+    Display *display = DefaultDisplay;
+    Window client_window = portal->client_window;
+
+    // Remove the border from the client window, as the window manager will
+    // be responsible for handling all window decorations.
+    XSetWindowBorderWidth(display, client_window, 0);
+
+    // Determine the portal title, based on the client window name.
+    char portal_title[256] = "Untitled";
+    x_get_window_name(display, client_window, portal_title, sizeof(portal_title));
+
+    // Set the portal title.
+    free(portal->title);
+    portal->title = strdup(portal_title);
+
+    // Determine whether the portal is top-level.
+    portal->top_level = x_window_is_top_level(display, portal->client_window);
+
+    // Determine the window type.
+    if (portal->top_level == true)
+    {
+        portal->client_window_type = x_get_window_type(display, portal->client_window);
+    }
+
+    // Create a frame for the portal, if necessary.
+    if (should_portal_be_framed(portal))
+    {
+        create_portal_frame(portal);
+    }
+
+    // Set the portal as initialized.
+    portal->initialized = true;
+
+    // Call all event handlers of the PortalInitialized event.
+    call_event_handlers((Event*)&(PortalInitializedEvent){
+        .type = PortalInitialized,
+        .portal = portal
+    });
+}
+
+void sort_portals()
+{
+    Display *display = DefaultDisplay;
+    Window root_window = DefaultRootWindow(display);
+
+    // Retrieve all windows in stacking order.
+    Window *windows = NULL;
+    unsigned int window_count = 0;
+    int status = x_query_tree_recursively(
+        display,        // Display
+        root_window,    // Parent
+        &windows,       // Children
+        &window_count   // Children count
+    );
+    if (status != 0)
+    {
+        LOG_ERROR("Could not sort portals, tree query failed (%d).", status);
+        free(windows);
+        return;
+    }
+
+    // Build sorted portals array from windows array.
+    int portals_added = 0;
+    for (int i = 0; i < (int)window_count; i++)
+    {
+        // Ensure the window belongs to a portal.
+        Portal *portal = find_portal_by_window(windows[i]);
+        if (portal == NULL) continue;
+
+        // Ensure we only handle client windows, and not frame windows as well,
+        // preventing duplicate entries in the sorted portals array.
+        if (windows[i] != portal->client_window) continue;
+
+        // Add portal to the sorted array.
+        registry.sorted[portals_added] = portal;
+        portals_added++;
+    }
+
+    // Clear remaining slots, if any.
+    while (portals_added < (int)registry.count) {
+        registry.sorted[portals_added] = NULL;
+        portals_added++;
+    }
+
+    // Cleanup.
+    free(windows);
+}
+
+void move_portal(Portal *portal, int x_root, int y_root)
+{
+    Display *display = DefaultDisplay;
+    Window root_window = DefaultRootWindow(display);
+
+    // Ensure the portal has been initialized.
+    if (portal->initialized == false) return;
+
+    // Move the portal itself.
+    portal->x_root = x_root;
+    portal->y_root = y_root;
+
+    // Move the portal windows.
+    scope {
+        Window client_window = portal->client_window;
+        Window frame_window = portal->frame_window;
+
+        // Determine which window to move.
+        Window target_window = (is_portal_frame_valid(portal)) ? frame_window : client_window;
+
+        // The `XMoveWindow()` function expects coordinates relative to the
+        // parent window. So we have to translate the provided root coordinates
+        // to parent coordinates.
+
+        // Retrieve the parent window of the target window.
+        Window parent_window = x_get_window_parent(display, target_window);
+        if (parent_window == None)
+        {
+            LOG_ERROR(
+                "Could not move portal (%p), parent window not found.",
+                (void*)portal
+            );
+            return;
+        }
+
+        // Calculate the parent window coordinates relative to root.
+        int parent_x_root = -1, parent_y_root = -1;
+        XTranslateCoordinates(
+            display,        // Display
+            parent_window,  // Source window
+            root_window,    // Reference window
+            0, 0,           // Source window origin coordinates
+            &parent_x_root, // Translated X coordinate
+            &parent_y_root, // Translated Y coordinate
+            &(Window){0}    // Child window (Unused)
+        );
+        if (parent_x_root == -1 || parent_y_root == -1)
+        {
+            LOG_ERROR(
+                "Could not move portal (%p), coordinate translation failed.",
+                (void*)portal
+            );
+            return;
+        }
+
+        // Calculate target window coordinates relative to parent.
+        int x_parent = x_root - parent_x_root;
+        int y_parent = y_root - parent_y_root;
+
+        // Move the target window.
+        XMoveWindow(display, target_window, x_parent, y_parent);
+
+        // According to the ICCCM (Sections 4.1.5 and 4.2.3), when a window 
+        // manager moves a reparented client window, it is responsible for 
+        // sending a synthetic ConfigureNotify event to the client with the 
+        // windows new dimensions and position relative to root.
+        
+        if (is_portal_frame_valid(portal))
+        {
+            // Retrieve the client window dimensions.
+            unsigned int client_width = 0, client_height = 0;
+            Status geometry_status = XGetGeometry(
+                display,            // Display
+                client_window,      // Drawable
+                &(Window){0},       // Root window (Unused)
+                &(int){0},          // X (Relative to parent) (Unused)
+                &(int){0},          // Y (Relative to parent) (Unused)
+                &client_width,      // Width
+                &client_height,     // Height
+                &(unsigned int){0}, // Border width (Unused)
+                &(unsigned int){0}  // Depth (Unused)
+            );
+            if (geometry_status == 0)
+            {
+                LOG_ERROR(
+                    "Could not move portal (%p), "
+                    "client window dimensions unavailable.",
+                    (void*)portal
+                );
+                return;
+            }
+
+            // Notify the client window of its new geometry.
+            XSendEvent(display, client_window, False, StructureNotifyMask, (XEvent*)&(XConfigureEvent) {
+                .type = ConfigureNotify,
+                .display = display,
+                .event = client_window,
+                .window = client_window,
+                .x = x_root,
+                .y = y_root + PORTAL_TITLE_BAR_HEIGHT,
+                .width = client_width,
+                .height = client_height,
+                .border_width = 0,
+                .above = None,
+                .override_redirect = False
+            });
+
+            // Process all pending X events.
+            XSync(display, False);
+        }
+    }
+
+    // Call all event handlers of the PortalTransformed event.
+    call_event_handlers((Event*)&(PortalTransformedEvent) {
+        .type = PortalTransformed,
+        .portal = portal
+    });
+}
+
+void resize_portal(Portal *portal, unsigned int width, unsigned int height)
+{
+    Display *display = DefaultDisplay;
+    Window root_window = DefaultRootWindow(display);
+
+    // Ensure the portal has been initialized.
+    if (portal->initialized == false) return;
+
+    // Resize the portal itself.
+    portal->width = width;
+    portal->height = height;
+
+    // Resize the portal windows.
+    scope {
+        Window frame_window = portal->frame_window;
+        Window client_window = portal->client_window;
+
+        if (is_portal_frame_valid(portal))
+        {
+            // Resize both the frame and client windows.
+            XResizeWindow(display, frame_window, width, height);
+            XResizeWindow(display, client_window, width, max(1, height - PORTAL_TITLE_BAR_HEIGHT));
+        }
+        else
+        {
+            // No frame, just resize the client window.
+            XResizeWindow(display, client_window, width, height);
+        }
+
+        // According to the ICCCM (Sections 4.1.5 and 4.2.3), when a window 
+        // manager resizes a reparented client window, it is responsible for 
+        // sending a synthetic ConfigureNotify event to the client with the 
+        // windows new dimensions and position relative to root.
+
+        if (is_portal_frame_valid(portal))
+        {
+            // Retrieve the client window position relative to root.
+            int client_x_root = -1, client_y_root = -1;
+            XTranslateCoordinates(
+                display,            // Display
+                client_window,      // Source window
+                root_window,        // Reference window
+                0, 0,               // Source window origin coordinates
+                &client_x_root,     // Translated X coordinate
+                &client_y_root,     // Translated Y coordinate
+                &(Window){0}        // Child window (Unused)
+            );
+            if (client_x_root == -1 || client_y_root == -1)
+            {
+                LOG_ERROR(
+                    "Could not resize portal (%p), coordinate translation failed.",
+                    (void*)portal
+                );
+                return;
+            }
+
+            // Notify the client window of its new geometry.
+            XSendEvent(display, client_window, False, StructureNotifyMask, (XEvent*)&(XConfigureEvent) {
+                .type = ConfigureNotify,
+                .display = display,
+                .event = client_window,
+                .window = client_window,
+                .x = client_x_root,
+                .y = client_y_root,
+                .width = max(1, width),
+                .height = max(1, height - PORTAL_TITLE_BAR_HEIGHT),
+                .border_width = 0,
+                .above = None,
+                .override_redirect = False
+            });
+
+            // Process all pending X events.
+            XSync(display, False);
+        }
+    }
+
+    // Call all event handlers of the PortalTransformed event.
+    call_event_handlers((Event*)&(PortalTransformedEvent){
+        .type = PortalTransformed,
+        .portal = portal
+    });
+}
+
+void synchronize_portal(Portal *portal)
+{
+    Display *display = DefaultDisplay;
+    Window root_window = DefaultRootWindow(display);
+    Window client_window = portal->client_window;
+
+    // Ensure the portal has been initialized.
+    if (portal->initialized == false) return;
+
+    // Retrieve the client window root coordinates.
+    int client_x_root = 0, client_y_root = 0;
+    XTranslateCoordinates(
+        display,                // Display
+        client_window,          // Source window
+        root_window,            // Reference window
+        0, 0,                   // Source window origin coordinates
+        &client_x_root,         // Translated x coordinate
+        &client_y_root,         // Translated y coordinate
+        &(Window){0}            // Child Window (Unused)
+    );
+
+    // Retrieve the client window dimensions.
+    unsigned int client_width = 0, client_height = 0;
+    XGetGeometry(
+        display,                // Display
+        client_window,          // Drawable
+        &(Window){0},           // Root window (Unused)
+        &(int){0},              // X (Relative to parent) (Unused)
+        &(int){0},              // Y (Relative to parent) (Unused)
+        &client_width,          // Width
+        &client_height,         // Height
+        &(unsigned int){0},     // Border width (Unused)
+        &(unsigned int){0}      // Depth (Unused)
+    );
+
+    // Calculate the new portal geometry.
+    bool is_framed = is_portal_frame_valid(portal);
+    int portal_x_root = client_x_root;
+    int portal_y_root = client_y_root + (is_framed ? -PORTAL_TITLE_BAR_HEIGHT : 0);
+    unsigned int portal_width = max(1, client_width);
+    unsigned int portal_height = max(1, client_height + (is_framed ? PORTAL_TITLE_BAR_HEIGHT : 0));
+
+    // Move the portal, only if the position has changed.
+    if (portal_x_root != portal->x_root || portal_y_root != portal->y_root)
+    {
+        move_portal(portal, portal_x_root, portal_y_root);
+    }
+
+    // Resize the portal, only if the dimensions have changed.
+    if (portal_width != portal->width || portal_height != portal->height)
+    {
+        resize_portal(portal, portal_width, portal_height);
+    }
+
+    // Synchronize all child portals as well.
+    Window *child_windows;
+    unsigned int child_window_count = 0;
+    XQueryTree(
+        display,            // Display
+        client_window,      // Window
+        &(Window){0},       // Root window (Unused)
+        &(Window){0},       // Parent window (Unused)
+        &child_windows,     // Children
+        &child_window_count // Children count
+    );
+    for (int i = 0; i < (int)child_window_count; i++)
+    {
+        Portal *child_portal = find_portal_by_window(child_windows[i]);
+        if (child_portal != NULL)
+        {
+            synchronize_portal(child_portal);
+        }
+    }
+}
+
+void raise_portal(Portal *portal)
+{
+    Display *display = DefaultDisplay;
+    Window client_window = portal->client_window;
+    Window frame_window = portal->frame_window;
+
+    // Ensure the portal has been initialized.
+    if (portal->initialized == false) return;
+
+    // Determine which window to raise.
+    Window target_window = (is_portal_frame_valid(portal)) ? frame_window : client_window;
+
+    // Raise the portal windows.
+    XRaiseWindow(display, target_window);
+
+    // Re-sort the portals.
+    sort_portals();
+
+    // Call all event handlers of the PortalRaised event.
+    call_event_handlers((Event*)&(PortalRaisedEvent){
+        .type = PortalRaised,
+        .portal = portal
+    });
 }
 
 void map_portal(Portal *portal)
 {
-    Display *display = portal->display;
-    Window client_window = portal->client_window;
-    Window frame_window = portal->frame_window;
+    Display *display = DefaultDisplay;
 
-    // Map the frame and client windows.
-    XMapWindow(display, frame_window);
-    XMapWindow(display, client_window);
+    // Handle the portals first time being mapped.
+    if (portal->initialized == false)
+    {
+        initialize_portal(portal);
+    }
 
-    // Focus the portal.
-    focus_portal(portal);
+    // Map the frame window, if it exists.
+    if (is_portal_frame_valid(portal))
+    {
+        XMapWindow(display, portal->frame_window);
+    }
+
+    // Map the client window, if it exists.
+    if (is_portal_client_valid(portal))
+    {
+        XMapWindow(display, portal->client_window);
+
+        // Set WM_STATE property as required by ICCCM.
+        // This tells the client it's being managed and in what state.
+        Atom WM_STATE = XInternAtom(display, "WM_STATE", False);
+        unsigned long state_data[2] = {
+            1,      // NormalState
+            None    // Icon window (none)
+        };
+        XChangeProperty(
+            display,
+            portal->client_window,
+            WM_STATE,
+            WM_STATE,
+            32,
+            PropModeReplace,
+            (unsigned char *)state_data,
+            2
+        );
+    }
+
+    // Set the portal as mapped.
+    portal->mapped = true;
+
+    // Synchronize the portal geometry.
+    synchronize_portal(portal);
+
+    // Handle transient windows (dialogs, popups) - they should be raised above
+    // their parent window per ICCCM.
+    Window transient_for = None;
+    if (x_get_transient_for(display, portal->client_window, &transient_for) == 0)
+    {
+        // This portal is transient for another window. Raise it to ensure
+        // it appears above its parent.
+        raise_portal(portal);
+    }
+
+    // Call all event handlers of the PortalMapped event.
+    call_event_handlers((Event*)&(PortalMappedEvent){
+        .type = PortalMapped,
+        .portal = portal
+    });
 }
 
 void unmap_portal(Portal *portal)
 {
-    Display *display = portal->display;
-    Window client_window = portal->client_window;
-    Window frame_window = portal->frame_window;
+    Display *display = DefaultDisplay;
 
-    // Unmap the frame and client windows.
-    XUnmapWindow(display, frame_window);
-    XUnmapWindow(display, client_window);
+    // Unmap the frame window, if it exists.
+    if (is_portal_frame_valid(portal))
+    {
+        XUnmapWindow(display, portal->frame_window);
+    }
+
+    // Unmap the client window, if it exists.
+    if (is_portal_client_valid(portal))
+    {
+        XUnmapWindow(display, portal->client_window);
+    }
+
+    // Set the portal as unmapped.
+    portal->mapped = false;
+
+    // Call all event handlers of the PortalUnmapped event.
+    call_event_handlers((Event*)&(PortalUnmappedEvent){
+        .type = PortalUnmapped,
+        .portal = portal
+    });
 }
 
-Portal *find_portal(Window window)
+int get_portal_index(Portal *portal)
 {
-    for (int i = 0; i < portals_count; i++)
+    for (int i = 0; i < (int)registry.count; i++)
     {
-        if (portals[i].frame_window == window ||
-            portals[i].client_window == window)
+        if (&registry.unsorted[i] == portal)
         {
-            return &portals[i];
+            return i;
+        }
+    }
+    return -1;
+}
+
+Portal *get_unsorted_portals(unsigned int *out_count)
+{
+    *out_count = registry.count;
+    return registry.unsorted;
+}
+
+Portal **get_sorted_portals(unsigned int *out_count)
+{
+    *out_count = registry.count;
+    return registry.sorted;
+}
+
+Portal *find_portal_by_window(Window window)
+{
+    // Iterate over the unsorted portals to find the portal associated with
+    // the specified window.
+    for (int i = 0; i < (int)registry.count; i++)
+    {
+        Portal *portal = &registry.unsorted[i];
+
+        // Skip invalid portals.
+        if (portal == NULL) continue;
+
+        // Check if the portal is associated with the specified window.
+        if (portal->frame_window == window ||
+            portal->client_window == window)
+        {
+            return portal;
+        }
+    }
+    return NULL;
+}
+
+Portal *find_portal_at_pos(int x_root, int y_root)
+{
+    // Iterate over the sorted portals in reverse order, to find the topmost
+    // portal at the specified position.
+    for (int i = registry.count - 1; i >= 0; i--)
+    {
+        Portal *portal = registry.sorted[i];
+
+        // Skip invalid portals.
+        if (portal == NULL) continue;
+        if (portal->initialized == false) continue;
+        if (portal->mapped == false) continue;
+
+        // Check if the portal is located at the specified position.
+        if (x_root >= portal->x_root &&
+            y_root >= portal->y_root &&
+            x_root < portal->x_root + (int)portal->width &&
+            y_root < portal->y_root + (int)portal->height)
+        {
+            return portal;
         }
     }
     return NULL;

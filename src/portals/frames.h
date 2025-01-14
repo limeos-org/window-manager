@@ -2,15 +2,32 @@
 #include "../all.h"
 
 /**
- * Creates a frame window and its Cairo context.
- * 
- * @param portal The portal to create the frame window for. It is assumed that
- * the portal struct is already populated with the necessary information
- * (Such as `x`, `y`, `width` and `height` etc.) to create the frame.
- * @param out_window The output parameter to store the created frame window.
- * @param out_cr The output parameter to store the Cairo context for the frame.
+ * Determines whether a portal should have a decorative frame.
+ *
+ * Checks ICCCM top-level status, Motif decoration hints, and EWMH window type
+ * to decide if the portal should be framed.
+ *
+ * @param portal The portal to check.
+ *
+ * @return - `true` The portal should be framed.
+ * @return - `false` The portal should not be framed.
+ *
+ * @note The portal's `top_level` and `client_window_type` fields must be populated
+ * before calling this function.
  */
-void create_portal_frame(Portal *portal, Window *out_window, cairo_t **out_cr);
+bool should_portal_be_framed(Portal *portal);
+
+/**
+ * Creates a decorative frame window for a portal.
+ *
+ * Allocates a frame window, reparents the client window into it, sets up Cairo
+ * rendering context, and configures EWMH frame extents.
+ *
+ * @param portal The portal to create the frame for.
+ *
+ * @note The portal's `frame_window` and `frame_cr` fields will be populated.
+ */
+void create_portal_frame(Portal *portal);
 
 /**
  * Draws all frame decorations for the portal. This includes the title bar,
@@ -19,18 +36,6 @@ void create_portal_frame(Portal *portal, Window *out_window, cairo_t **out_cr);
  * @param portal The portal to draw the frame decorations for.
  */
 void draw_portal_frame(Portal *portal);
-
-/**
- * Checks if the provided coordinates are within the frame area of the portal.
- * 
- * @param portal The portal to check the frame area for.
- * @param rel_x The x coordinate, relative to the portal.
- * @param rel_y The y coordinate, relative to the portal.
- * 
- * @return - `True (1)` The coordinates are within the frame area.
- * @return - `False (0)` The coordinates are not within the frame area.
- */
-bool is_portal_frame_area(Portal *portal, int rel_x, int rel_y);
 
 /**
  * Checks if the portal frame is valid.
@@ -44,13 +49,24 @@ bool is_portal_frame_valid(Portal *portal);
 
 /**
  * Destroys a frame window and performs neccessary cleanups.
- * 
+ *
  * @param portal The portal containing the frame window.
- * 
+ *
  * @return - `0` The frame window was destroyed successfully.
- * @return - `-1` The portal frame is invalid.
- * @return - `-2` Internal `XDestroyWindow()` call failed.
- * 
- * @note - Can safely be called without checking if the frame is valid first.
+ * @return - `-1` Internal `XDestroyWindow()` call failed.
+ *
+ * @warning - Ensure the portal frame is valid before calling this function.
  */
 int destroy_portal_frame(Portal *portal);
+
+/**
+ * Checks if a position is within the frame area (title bar) of a portal.
+ *
+ * @param portal The portal to check.
+ * @param rel_x The X coordinate relative to the portal.
+ * @param rel_y The Y coordinate relative to the portal.
+ *
+ * @return - `true` The position is within the frame area.
+ * @return - `false` The position is not within the frame area.
+ */
+bool is_portal_frame_area(Portal *portal, int rel_x, int rel_y);

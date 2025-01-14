@@ -27,11 +27,11 @@ static cairo_surface_t *load_background_image(Display *display, const char *file
 
     // Create a surface to hold the scaled image.
     cairo_surface_t *scaled_image = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, screen_width, screen_height);
-    cairo_t *cr = cairo_create(scaled_image);
-    cairo_scale(cr, (double)screen_width / image_width, (double)screen_height / image_height);
-    cairo_set_source_surface(cr, original_image, 0, 0);
-    cairo_paint(cr);
-    cairo_destroy(cr);
+    cairo_t *scale_cr = cairo_create(scaled_image);
+    cairo_scale(scale_cr, (double)screen_width / image_width, (double)screen_height / image_height);
+    cairo_set_source_surface(scale_cr, original_image, 0, 0);
+    cairo_paint(scale_cr);
+    cairo_destroy(scale_cr);
 
     // Free the original image surface from memory.
     cairo_surface_destroy(original_image);
@@ -65,6 +65,9 @@ static void draw_background_solid(cairo_t *cr, unsigned long color)
 
 HANDLE(Initialize)
 {
+    Display *display = DefaultDisplay;
+    Window root_window = DefaultRootWindow(display);
+
     // Get configuration values.
     GET_CONFIG(cfg_background_mode, sizeof(cfg_background_mode), CFG_BUNDLE_BACKGROUND_MODE);
     GET_CONFIG(&cfg_background_color, sizeof(cfg_background_color), CFG_BUNDLE_BACKGROUND_COLOR);
@@ -90,6 +93,8 @@ HANDLE(Initialize)
 HANDLE(Expose)
 {
     XExposeEvent *_event = &event->xexpose;
+    Display *display = DefaultDisplay;
+    Window root_window = DefaultRootWindow(display);
 
     if (_event->window == root_window && _event->count == 0)
     {

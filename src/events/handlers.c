@@ -1,31 +1,56 @@
 #include "../all.h"
 
 typedef struct {
-    int event_type;
-    EventHandler *event_handler;
-} EventHandlerMap;
+    int type;
+    EventCallback *callback;
+} EventHandler;
 
-static EventHandlerMap *event_handlers = NULL;
-static int event_handlers_count = 0;
+typedef struct {
+    EventHandler *handlers;
+    int count;
+    int capacity;
+} EventHandlers;
 
-void register_event_handler(int event_type, EventHandler *event_handler)
+static EventHandlers event_handlers = {
+    .handlers = NULL,
+    .count = 0,
+    .capacity = 0,
+};
+
+void register_event_handler(int type, EventCallback *callback)
 {
-    EventHandlerMap *buffer = realloc(event_handlers, (event_handlers_count + 1) * sizeof(EventHandlerMap));
-    event_handlers = buffer;
+    // Increase the event handlers count.
+    event_handlers.count++;
 
-    event_handlers[event_handlers_count].event_type = event_type;
-    event_handlers[event_handlers_count].event_handler = event_handler;
+    // Allocate additional memory for the event handlers if necessary.
+    if (event_handlers.count > event_handlers.capacity)
+    {
+        event_handlers.capacity = event_handlers.capacity == 0 ? 2 : event_handlers.capacity * 2;
+        EventHandler *handlers = realloc(event_handlers.handlers, event_handlers.capacity * sizeof(EventHandler));
+        if (handlers == NULL)
+        {
+            LOG_ERROR("Failed to allocate memory for event handlers.");
+            exit(EXIT_FAILURE);
+        }
+        event_handlers.handlers = handlers;
+    }
 
-    event_handlers_count++;
+    // Register the event handler.
+    event_handlers.handlers[event_handlers.count - 1] = (EventHandler){
+        .type = type,
+        .callback = callback,
+    };
 }
 
-void invoke_event_handlers(Display *display, Window window, int event_type, XEvent *event)
+void call_event_handlers(Event *event)
 {
-    for (int i = 0; i < event_handlers_count; i++)
+    // Iterate through all event handlers, calling the callback of each event
+    // handler that has a matching event type.
+    for (int i = 0; i < event_handlers.count; i++)
     {
-        if (event_handlers[i].event_type == event_type)
+        if (event_handlers.handlers[i].type == event->type)
         {
-            event_handlers[i].event_handler(event, display, window);
+            event_handlers.handlers[i].callback(event);
         }
     }
 }

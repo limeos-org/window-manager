@@ -1,26 +1,28 @@
-#include "all.h"
-
 /**
  * This code is responsible for setting the `_NET_ACTIVE_WINDOW` property on the
  * root window. EWMH specification requires window managers to advertise this
  * property so other applications can determine the currently active window.
- * 
+ *
  * @note https://specifications.freedesktop.org/wm-spec/1.5/ar01s03.html#id-1.4.10
  */
 
+#include "../all.h"
+
 static Window current_active_window = 0;
 
-static void set_ewmh_active_window(Display *display, Window client_window)
+static void set_ewmh_active_window(Window client_window)
 {
+    Display *display = DefaultDisplay;
+
     // Update our internal state.
     current_active_window = client_window;
 
     // Set the `_NET_ACTIVE_WINDOW` property.
-    Atom net_active_window = XInternAtom(display, "_NET_ACTIVE_WINDOW", False);
+    Atom _NET_ACTIVE_WINDOW = XInternAtom(display, "_NET_ACTIVE_WINDOW", False);
     XChangeProperty(
         display,                            // Display
         DefaultRootWindow(display),         // Window
-        net_active_window,                  // Atom / Property
+        _NET_ACTIVE_WINDOW,                 // Atom / Property
         XA_WINDOW,                          // Type
         32,                                 // Format (32-bit)
         PropModeReplace,                    // Mode
@@ -31,24 +33,24 @@ static void set_ewmh_active_window(Display *display, Window client_window)
 
 HANDLE(Initialize)
 {
-    set_ewmh_active_window(display, 0);
+    set_ewmh_active_window(0);
 }
 
 HANDLE(PortalFocused)
 {
-    XClientMessageEvent *_event = &event->xclient;
-    Portal *portal = (Portal *)_event->data.l[0];
+    PortalFocusedEvent *_event = &event->portal_focused;
+    Portal *portal = _event->portal;
 
-    set_ewmh_active_window(portal->display, portal->client_window);
+    set_ewmh_active_window(portal->client_window);
 }
 
 HANDLE(PortalDestroyed)
 {
-    XClientMessageEvent *_event = &event->xclient;
-    Window client_window = (Window)_event->data.l[0];
+    PortalDestroyedEvent *_event = &event->portal_destroyed;
+    Window client_window = _event->client_window;
 
-    if(current_active_window == client_window)
+    if (current_active_window == client_window)
     {
-        set_ewmh_active_window(display, 0);
+        set_ewmh_active_window(0);
     }
 }

@@ -31,7 +31,7 @@
 // Configuration field constants (terminal_shortcut).
 #define CFG_TYPE_TERMINAL_SHORTCUT str
 #define CFG_KEY_TERMINAL_SHORTCUT "terminal_shortcut"
-#define CFG_DEFAULT_TERMINAL_SHORTCUT "super+enter"
+#define CFG_DEFAULT_TERMINAL_SHORTCUT "super+t"
 #define CFG_BUNDLE_TERMINAL_SHORTCUT \
         CFG_TYPE_TERMINAL_SHORTCUT, \
         CFG_KEY_TERMINAL_SHORTCUT, \
@@ -54,6 +54,15 @@
         CFG_TYPE_EXIT_SHORTCUT, \
         CFG_KEY_EXIT_SHORTCUT, \
         CFG_DEFAULT_EXIT_SHORTCUT
+
+// Configuration field constants (close_shortcut).
+#define CFG_TYPE_CLOSE_SHORTCUT str
+#define CFG_KEY_CLOSE_SHORTCUT "close_shortcut"
+#define CFG_DEFAULT_CLOSE_SHORTCUT "super+shift+q"
+#define CFG_BUNDLE_CLOSE_SHORTCUT \
+        CFG_TYPE_CLOSE_SHORTCUT, \
+        CFG_KEY_CLOSE_SHORTCUT, \
+        CFG_DEFAULT_CLOSE_SHORTCUT
 
 // Configuration field constants (background_mode).
 #define CFG_TYPE_BACKGROUND_MODE str
