@@ -24,6 +24,8 @@ When conflicts arise between these sections, always follow the repository-specif
 •&emsp;[Versioning](#versioning)  
 •&emsp;[File Structure](#file-structure)  
 •&emsp;[Naming Convention](#naming-convention)  
+&emsp;•&emsp;[Branch Naming](#branch-naming)  
+&emsp;•&emsp;[Commit Messages](#commit-messages)  
 &emsp;•&emsp;[Function Naming](#function-naming)  
 &emsp;•&emsp;[Variable Naming](#variable-naming)  
 &emsp;•&emsp;[Parameter Naming](#parameter-naming)  
@@ -88,22 +90,24 @@ DISPLAY=:1 xterm &
 
 ### Git Workflow
 
-This repository follows the "Gitflow" git workflow, which uses two main branches:  
-&emsp;•&emsp;`main` - Stable production code.  
-&emsp;•&emsp;`develop` - Integration branch for features.  
+This repository uses two main branches:  
+&emsp;•&emsp;`main` - Stable production code, must not be pushed to directly.  
+&emsp;•&emsp;`develop` - Development code, must not be pushed to directly.  
 
 In order to contribute, you must follow these steps:  
 &emsp;1\. Fork the repository.  
-&emsp;2\. Create a feature branch from `develop`:
-   ```bash
-   git checkout develop
-   git checkout -b feature/your-feature-name
-   ```
-&emsp;3\. Make your changes.  
-&emsp;4\. Push to your fork.  
+&emsp;2\. Create a branch from `develop`, following the [branch naming conventions](#branch-naming):
+```bash
+git checkout develop
+git checkout -b add-spectacular-feature
+```  
+&emsp;3\. Commit your changes, following the [commit message convention](#commit-messages).  
+&emsp;4\. Push the changes to your fork.  
 &emsp;5\. Submit a pull request targeting the `develop` branch.  
 
-A more in-depth guide on Gitflow can be found [here](https://nvie.com/posts/a-successful-git-branching-model/).
+The changes will be reviewed by the project maintainers and contributors, after which it will be merged into the `develop` branch if approved.
+
+When sufficient changes accumulate in `develop`, the branch will be synchronised with the `main` branch by the project maintainers, at which point, a new release is also created.
 
 ### Versioning
 
@@ -133,6 +137,48 @@ The root directory must only contain critical repository files such as build con
 •&emsp;Source files (.c) and header files (.h) must be paired and share the same name within the same directory, except for `main.c`.
 
 ### Naming Convention
+
+#### Branch Naming  
+
+All Git branches in this repository must adhere to the _dash-case_ naming convention, with the exception of version numbers, which are delimited with dots. Consider these guidelines when naming a Git branch:  
+
+1. **Action Prefix**  
+   All branch names (excluding `main` and `develop`) must start with one of the following action prefixes:  
+   •&emsp; `add` - Primarily adds new code, docs, files, or configurations.  
+   •&emsp; `update` - Primarily modifies code, docs, files, or configurations.  
+   •&emsp; `remove` - Primarily removes code, docs, files, or configurations.    
+   •&emsp; `release` - Prepares codebase for a version release.  
+   •&emsp; `fix` - Resolves bugs or issues.  
+
+   Examples:  
+   **✓**  `add-branch-naming-guidelines`  
+   **✓**  `update-auth-tests-code-quality`  
+   **✓**  `remove-gtk-dependency`  
+   **✓**  `fix-slow-authentication`  
+   **✓**  `release-1.0.0`  
+
+#### Commit Messages
+
+All commit messages in this repository must follow a specific format. Consider these guidelines when writing a commit message:
+
+1. **Action Prefix**  
+   All messages must start with one of these action words:  
+   •&emsp;`Add` - When adding new code, docs, files, or configurations.  
+   •&emsp;`Update` - When modifying code, docs, files, or configurations.  
+   •&emsp;`Remove` - When removing code, docs, files, or configurations.  
+   •&emsp;`Fix` - When resolving bugs or issues.  
+
+2. **Message Content**  
+   •&emsp;Keep messages concise but descriptive.  
+   •&emsp;Focus on what changes do, not how they do it.  
+   •&emsp;Do not end the message with a dot.  
+   •&emsp;Write in present tense.  
+
+   Examples:  
+   **✓**  `Add user authentication module`  
+   **✓**  `Update memory allocation efficiency`  
+   **✓**  `Remove deprecated config parser`  
+   **✓**  `Fix memory leak during window creation`  
 
 #### Function Naming
 
