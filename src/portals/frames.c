@@ -99,8 +99,6 @@ int destroy_portal_frame(Portal *portal)
     {
         return -2;
     }
-
-    // Clear the frame window reference from the portal.
     portal->frame_window = 0;
 
     return 0;
