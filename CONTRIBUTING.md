@@ -444,7 +444,7 @@ Function documentation should follow the Doxygen-style format - a standardized w
    &emsp;•&emsp;Use separate `@warning` tags.  
    &emsp;•&emsp;List each warning with bullet points (`-`).  
    &emsp;•&emsp;Follow the bullet point (`-`) with a description.  
-   •&emsp;For single notes:  
+   •&emsp;For single warnings:  
    &emsp;•&emsp;Use one `@warning` tag with a simple description.
 
 6. **`@deprecated` tag**  
