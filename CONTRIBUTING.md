@@ -91,7 +91,7 @@ DISPLAY=:1 xterm &
 ### Git Workflow
 
 This repository uses two main branches:  
-&emsp;•&emsp;`main` - Stable production code, must not be pushed to directly.  
+&emsp;•&emsp;`main` - Stable release code, must not be pushed to directly.  
 &emsp;•&emsp;`develop` - Development code, must not be pushed to directly.  
 
 In order to contribute, you must follow these steps:  
@@ -105,9 +105,9 @@ git checkout -b add-spectacular-feature
 &emsp;4\. Push the changes to your fork.  
 &emsp;5\. Submit a pull request targeting the `develop` branch.  
 
-The changes will be reviewed by the project maintainers and contributors, after which it will be merged into the `develop` branch if approved.
+The changes will be reviewed by the project maintainers and contributors, after which it will be _merged or squashed_ into the `develop` branch if approved.
 
-When sufficient changes accumulate in `develop`, the branch will be synchronised with the `main` branch by the project maintainers, at which point, a new release is also created.
+When sufficient changes accumulate in `develop`, the branch will be _rebased_ onto `main` by the project maintainers, at which point, a new release tag is also created.
 
 ### Versioning
 
@@ -140,28 +140,32 @@ The root directory must only contain critical repository files such as build con
 
 #### Branch Naming  
 
-All Git branches in this repository must adhere to the _dash-case_ naming convention, with the exception of version numbers, which are delimited with dots. Consider these guidelines when naming a Git branch:  
+All Git branches in this repository must adhere to the _dash-case_ naming convention. Consider these guidelines when naming a Git branch:  
 
 1. **Action Prefix**  
    All branch names (excluding `main` and `develop`) must start with one of the following action prefixes:  
    •&emsp; `add` - Primarily adds new code, docs, files, or configurations.  
    •&emsp; `update` - Primarily modifies code, docs, files, or configurations.  
-   •&emsp; `remove` - Primarily removes code, docs, files, or configurations.    
-   •&emsp; `release` - Prepares codebase for a version release.  
+   •&emsp; `remove` - Primarily removes code, docs, files, or configurations.  
    •&emsp; `fix` - Resolves bugs or issues.  
+
+2. **Name Content**  
+   •&emsp;Keep names concise but descriptive.  
+   •&emsp;Focus on what changes do, not how they do it.  
+   •&emsp;Avoid unneccessary abbreviations.  
+   •&emsp;Write in lowercase letters.  
 
    Examples:  
    **✓**  `add-branch-naming-guidelines`  
    **✓**  `update-auth-tests-code-quality`  
    **✓**  `remove-gtk-dependency`  
    **✓**  `fix-slow-authentication`  
-   **✓**  `release-1.0.0`  
 
 #### Commit Messages
 
 All commit messages in this repository must follow a specific format. Consider these guidelines when writing a commit message:
 
-1. **Action Prefix**  
+1. **Action Words**  
    All messages must start with one of these action words:  
    •&emsp;`Add` - When adding new code, docs, files, or configurations.  
    •&emsp;`Update` - When modifying code, docs, files, or configurations.  
@@ -171,7 +175,8 @@ All commit messages in this repository must follow a specific format. Consider t
 2. **Message Content**  
    •&emsp;Keep messages concise but descriptive.  
    •&emsp;Focus on what changes do, not how they do it.  
-   •&emsp;Do not end the message with a dot.  
+   •&emsp;Avoid unneccessary abbreviations.  
+   •&emsp;Omit the period at the end of the message.  
    •&emsp;Write in present tense.  
 
    Examples:  
