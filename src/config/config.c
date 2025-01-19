@@ -1,7 +1,7 @@
 #include "../all.h"
 
-#define CFG_DIRECTORY "~/.config/lime-os-window-manager"
-#define CFG_FILE_PATH "~/.config/lime-os-window-manager/config"
+#define CFG_DIRECTORY "~/.config/lime-os"
+#define CFG_FILE_PATH "~/.config/lime-os/window-manager"
 
 typedef struct {
     char key[CFG_MAX_KEY_LENGTH];
@@ -17,7 +17,7 @@ static const char default_config[] =
     "# General\n"
     "# --- \n"
     "\n"
-    "# Redraw frequency of window manager elements (times per second).\n"
+    "# Redraw frequency of the screen (times per second).\n"
     "# Lowering this value can significantly enhance performance.\n"
     CFG_KEY_FRAMERATE "=" CFG_DEFAULT_FRAMERATE "\n"
     "\n"
@@ -36,6 +36,7 @@ static const char default_config[] =
     "# Background\n"
     "# --- \n"
     "\n"
+    "# The rendering mode of the background.\n"
     "# May either be 'solid' or 'image'.\n"
     CFG_KEY_BACKGROUND_MODE "=" CFG_DEFAULT_BACKGROUND_MODE "\n"
     "\n"
