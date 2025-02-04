@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -Wall -Wextra
-LIBS = -lX11 -lXi -lcairo
+CFLAGS = -Wall -Wextra -g
+LIBS = -lX11 -lXcomposite -lXi -lXrandr -lXfixes -lcairo
 
 SRCDIR = src
 OBJDIR = obj

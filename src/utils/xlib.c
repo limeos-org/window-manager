@@ -1,5 +1,63 @@
 #include "../all.h"
 
+static Display *default_display = NULL;
+
+void x_set_default_display(Display *display)
+{
+    default_display = display;
+}
+
+Display *x_get_default_display()
+{
+    return default_display;
+}
+
+Time x_get_current_time()
+{
+    struct timeval now;
+    gettimeofday(&now, NULL);
+    return (now.tv_sec * 1000) + (now.tv_usec / 1000);
+}
+
+pid_t x_get_window_pid(Display *display, Window window)
+{
+    // Retrieve the `_NET_WM_PID` property from the window.
+    unsigned char *data;
+    unsigned long item_count;
+    Atom _NET_WM_PID = XInternAtom(display, "_NET_WM_PID", False);
+    int status = XGetWindowProperty(
+        display,                // Display
+        window,                 // Window
+        _NET_WM_PID,            // Property
+        0, 1,                   // Offset, length
+        False,                  // Delete
+        XA_CARDINAL,            // Type
+        &(Atom){0},             // Response type (unused)
+        &(int){0},              // Response format (unused)
+        &item_count,            // Item count
+        &(unsigned long){0},    // Bytes after (unused)
+        &data                   // Data
+    );
+    if (status != Success || data == NULL || item_count != 1) return -1;
+
+    // Store the PID, so we can free the property data.
+    pid_t pid = *(uint32_t*)data;
+
+    // Free the property data.
+    XFree(data);
+
+    return pid;
+}
+
+Window x_get_window_parent(Display *display, Window window)
+{
+    Window parent, *children;
+    int status = XQueryTree(display, window, &(Window){0}, &parent, &children, &(unsigned int){0});
+    if (status == 0) return None;
+    XFree(children);
+    return parent;
+}
+
 int x_get_window_name(Display *display, Window window, char *out_name, size_t name_size)
 {
     // List of properties to check for the window name.
@@ -36,27 +94,6 @@ int x_get_window_name(Display *display, Window window, char *out_name, size_t na
     }
 
     return (name != NULL) ? 0 : -1;
-}
-
-int x_error_handler(Display *display, XErrorEvent *error) {
-    if (
-        // Ignore BadWindow, BadDrawable and BadPixmap errors since they commonly
-        // occur, even under normal operation. All other X errors are logged as
-        // they typically indicate real issues.
-        error->error_code != BadWindow &&
-        error->error_code != BadDrawable &&
-        error->error_code != BadPixmap
-    )
-    {
-        char error_text[1024];
-        XGetErrorText(display, error->error_code, error_text, sizeof(error_text));
-        
-        LOG_ERROR(
-            "%s (request: %d, resource: 0x%lx)", 
-            error_text, error->request_code, error->resourceid
-        );
-    }
-    return 0;
 }
 
 bool x_window_supports_protocol(Display *display, Window window, Atom protocol)
@@ -179,4 +216,100 @@ int x_key_names_to_symbols(char *names, const char delimiter, int *out_keys, int
     free(names_copy);
 
     return status;
+}
+
+static int _x_query_tree_recursively(
+    Display *display,
+    Window parent,
+    Window **out_children,
+    unsigned int *out_children_count,
+    int *out_current_position
+)
+{
+    // Query the children of the parent.
+    Window *children;
+    unsigned int children_count;
+    if (XQueryTree(display, parent, &(Window){0}, &(Window){0}, &children, &children_count) == 0)
+    {
+        return -1;
+    }
+
+    // Ensure we don't handle parents without children.
+    if (children_count == 0) return 0;
+
+    // Recalculate the output children count and reallocate memory for them.
+    *out_children_count += children_count;
+    *out_children = realloc(*out_children, (*out_children_count) * sizeof(Window));
+
+    // Iterate over each child from the tree query.
+    for (unsigned int i = 0; i < children_count; i++) {
+        // Insert this child into the children output.
+        (*out_children)[*out_current_position] = children[i];
+        (*out_current_position)++;
+
+        // Insert its children into the children output.
+        int status = _x_query_tree_recursively(display, children[i], out_children, out_children_count, out_current_position);
+        if (status != 0)
+        {
+            XFree(children);
+            return status;
+        }
+    }
+
+    XFree(children);
+    return 0;
+}
+
+int x_query_tree_recursively(Display *display, Window parent, Window **out_children, unsigned int *out_children_count)
+{
+    // Initialize the required variables.
+    *out_children = NULL;
+    *out_children_count = 0;
+    int current_position = 0;
+
+    // Recursively query the tree.
+    return _x_query_tree_recursively(display, parent, out_children, out_children_count, &current_position);
+}
+
+Window x_create_simple_window(
+    Display *display,
+    Window parent,
+    int x, int y,
+    unsigned int width, unsigned int height,
+    unsigned int border_width, unsigned long border_pixel,
+    unsigned long background
+)
+{
+    // Grab the server so events are not processed while creating the window.
+    XGrabServer(display);
+
+    // Create the window.
+    Window window = XCreateSimpleWindow(
+        display,        // Display
+        parent,         // Parent
+        x, y,           // X, Y
+        width, height,  // Width, Height
+        border_width,   // Border width
+        border_pixel,   // Border pixel
+        background      // Background
+    );
+
+    // Assign the `_NET_WM_PID` property to the window.
+    pid_t pid = getpid();
+    Atom _NET_WM_PID = XInternAtom(display, "_NET_WM_PID", False);
+    XChangeProperty(
+        display,                // Display
+        window,                 // Window
+        _NET_WM_PID,            // Property
+        XA_CARDINAL,            // Type
+        32,                     // Format (32-bit)
+        PropModeReplace,        // Mode
+        (unsigned char *)&pid,  // Data
+        1                       // Data item count
+    );
+
+    // Ungrab the server so events can be processed again.
+    XUngrabServer(display);
+
+    return window;
 }

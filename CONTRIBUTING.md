@@ -52,6 +52,9 @@ sudo apt install \
    make \
    libx11-dev \
    libxi-dev \
+   libxfixes-dev \
+   libxrandr-dev \
+   libxcomposite-dev \
    libcairo2-dev
 ```
 

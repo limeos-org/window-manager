@@ -1,9 +1,11 @@
 #include "../all.h"
 
-static bool is_event_loop_initialized = false;
+static Time last_iteration_time = 0;
+static Time last_update_time = 0;
+static Time throttle_ms = 0;
 
 static const long x_root_event_mask =
-    ExposureMask |
+    StructureNotifyMask |
     SubstructureRedirectMask |
     SubstructureNotifyMask;
 
@@ -14,117 +16,118 @@ static const long xi_root_event_mask =
     XI_RawKeyPressMask |
     XI_RawKeyReleaseMask;
 
-static void handle_x_event(Display *display, Window window, XEvent *event)
+void initialize_event_loop()
 {
-    invoke_event_handlers(display, window, event->type, event);
-}
+    Display *display = DefaultDisplay;
+    Window root_window = DefaultRootWindow(display);
 
-static void handle_xi_event(Display *display, Window window, XEvent *event)
-{
-    // Retrieve the XInput2 event data from the XEvent structure.
-    if(XGetEventData(display, &event->xcookie) == False) return;
-    XIRawEvent *raw_event = (XIRawEvent *)event->xcookie.data;
-
-    // Ensure we only handle events from master devices.
-    int device_type;
-    if(xi_get_device_type(display, raw_event->deviceid, &device_type) == -1)
-    {
-        XFreeEventData(display, &event->xcookie);
-        return;
-    }
-    bool is_master_device = device_type == XIMasterPointer || device_type == XIMasterKeyboard;
-    if(!is_master_device)
-    {
-        XFreeEventData(display, &event->xcookie);
-        return;
-    }
-
-    // Convert raw XInput2 event to a normal X event and invoke the appropriate
-    // event handlers.
-    if(event->xcookie.evtype == XI_RawButtonPress)
-    {
-        XEvent new_event = xi_convert_raw_button_press_event(display, window, raw_event);
-        invoke_event_handlers(display, window, GlobalButtonPress, &new_event);
-    }
-    if(event->xcookie.evtype == XI_RawButtonRelease)
-    {
-        XEvent new_event = xi_convert_raw_button_release_event(display, window, raw_event);
-        invoke_event_handlers(display, window, GlobalButtonRelease, &new_event);
-    }
-    if(event->xcookie.evtype == XI_RawMotion)
-    {
-        XEvent new_event = xi_convert_raw_motion_event(display, window, raw_event);
-        invoke_event_handlers(display, window, GlobalMotionNotify, &new_event);
-    }
-    if(event->xcookie.evtype == XI_RawKeyPress)
-    {
-        XEvent new_event = xi_convert_raw_key_press_event(display, window, raw_event);
-        invoke_event_handlers(display, window, GlobalKeyPress, &new_event);
-    }
-    if(event->xcookie.evtype == XI_RawKeyRelease)
-    {
-        XEvent new_event = xi_convert_raw_key_release_event(display, window, raw_event);
-        invoke_event_handlers(display, window, GlobalKeyRelease, &new_event);
-    }
-
-    XFreeEventData(display, &event->xcookie);
-}
-
-void initialize_event_loop(Display *display, Window root_window)
-{
-    if (is_event_loop_initialized == true)
-    {
-        LOG_ERROR("Attempted to initialize duplicate event loop.");
-        return;
-    }
-
+    // Retrieve the XInput2 extension opcode.
     int xi_opcode;
     if (!XQueryExtension(display, "XInputExtension", &xi_opcode, &(int){0}, &(int){0}))
     {
-        LOG_ERROR("XInput2 extension not available.");
-        return;
+        LOG_ERROR("Could not retrieve opcode of XInput2 extension.");
+        exit(EXIT_FAILURE);
     }
 
-    is_event_loop_initialized = true;
-
-    // Choose which root window events we should listen for.
+    // Select which events we should listen for on the root window.
     XSelectInput(display, root_window, x_root_event_mask);
     xi_select_input(display, root_window, xi_root_event_mask);
 
-    // Invoke all preparation and initialization handler functions.
-    invoke_event_handlers(display, root_window, Prepare, NULL);
-    invoke_event_handlers(display, root_window, Initialize, NULL);
+    // Call all event handlers of the Prepare event.
+    call_event_handlers((Event*)&(PrepareEvent){
+        .type = Prepare,
+        .display = display,
+        .root_window = root_window,
+    });
 
-    // Send an initial Expose event.
-    XWindowAttributes root_window_attr;
-    XGetWindowAttributes(display, root_window, &root_window_attr);
-    XEvent custom_event;
-    custom_event.type = Expose;
-    custom_event.xexpose.window = root_window;
-    custom_event.xexpose.display = display;
-    custom_event.xexpose.x = 0;
-    custom_event.xexpose.y = 0;
-    custom_event.xexpose.width = root_window_attr.width;
-    custom_event.xexpose.height = root_window_attr.height;
-    custom_event.xexpose.count = 0;
-    XSendEvent(display, root_window, False, ExposureMask, &custom_event);
-    XFlush(display);
+    // Call all event handlers of the Initialize event.
+    call_event_handlers((Event*)&(InitializeEvent){
+        .type = Initialize,
+        .display = display,
+        .root_window = root_window,
+    });
 
-    // Start the event loop.
-    XEvent event;
-    bool is_xi_event;
-    while (1)
+    while (true)
     {
-        XNextEvent(display, &event);
-        is_xi_event = event.type == GenericEvent && event.xcookie.extension == xi_opcode;
+        // Calculate the blocking timeout.
+        Time current_time = x_get_current_time();
+        Time elapsed_time = current_time - last_iteration_time;
+        Time remaining_time = throttle_ms - elapsed_time;
+        struct timeval timeout = {
+            .tv_sec = 0,
+            .tv_usec = max(0, remaining_time * 1000)
+        };
 
-        if(is_xi_event)
+        // Block until an X event is received or the timeout is reached.
+        fd_set in_fds;
+        FD_ZERO(&in_fds);
+        FD_SET(ConnectionNumber(display), &in_fds);
+        select(ConnectionNumber(display) + 1, &in_fds, NULL, NULL, &timeout);
+
+        // Handle all pending X events.
+        while (XPending(display) > 0)
         {
-            handle_xi_event(display, root_window, &event);
+            // Retrieve the next X event.
+            XEvent x_event;
+            XNextEvent(display, &x_event);
+
+            // Downcast the X event to a standard event.
+            Event *event = (Event*)&x_event;
+
+            // Check if the X event originated from the XInput2 extension, if it
+            // did, convert it to a more developer-friendly event type.
+            if (event->type == GenericEvent && event->xcookie.extension == xi_opcode)
+            {
+                // Extract the XInput2 event data.
+                XGetEventData(display, &event->xcookie);
+                XIRawEvent *xi_raw_event = event->xcookie.data;
+
+                // Ignore the event if it originated from a slave device.
+                int device_type = 0;
+                xi_get_device_type(display, xi_raw_event->deviceid, &device_type);
+                if (device_type != XIMasterPointer && device_type != XIMasterKeyboard)
+                {
+                    XFreeEventData(display, &event->xcookie);
+                    continue;
+                }
+
+                // Construct a new event from the XInput2 event data.
+                Event new_event = convert_raw_xinput_event(xi_raw_event);
+                event = &new_event;
+                
+                // Cleanup.
+                XFreeEventData(display, &event->xcookie);
+            }
+
+            // Call the appropriate event handlers.
+            call_event_handlers(event);
         }
-        else
+
+        // Check if sufficient time has passed since the last update.
+        if (current_time - last_update_time > throttle_ms)
         {
-            handle_x_event(display, root_window, &event);
+            // Call all event handlers of the Update event.
+            call_event_handlers((Event*)&(UpdateEvent){
+                .type = Update,
+                .display = display,
+                .root_window = root_window,
+            });
+
+            // Update the last update time.
+            last_update_time = current_time;
         }
+
+        // Update the last iteration time.
+        last_iteration_time = current_time;
     }
+}
+
+HANDLE(Initialize)
+{
+    // Get the framerate from the configuration.
+    int framerate;
+    GET_CONFIG(&framerate, sizeof(framerate), CFG_BUNDLE_FRAMERATE);
+
+    // Convert the framerate to a throttle time and store it.
+    throttle_ms = (Time)framerate_to_throttle_ms(framerate);
 }
