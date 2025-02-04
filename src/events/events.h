@@ -7,9 +7,9 @@ typedef struct {
 } Portal;
 
 /**
- * @brief An event that gets triggered before the event loop starts.
+ * An event that gets triggered before the event loop starts.
  * 
- * @warning - This event is reserved for initialization tasks that other modules
+ * This event is reserved for initialization tasks that other modules
  * may depend on for their initialization tasks. For regular initialization 
  * logic, use the `Initialize` event instead.
  */
@@ -21,7 +21,7 @@ typedef struct {
 } PrepareEvent;
 
 /**
- * @brief An event that gets triggered before the event loop starts.
+ * An event that gets triggered before the event loop starts.
  */
 #define Initialize 129
 typedef struct {
@@ -31,11 +31,8 @@ typedef struct {
 } InitializeEvent;
 
 /**
- * @brief An event that gets triggered at regular intervals based on the 
- * configured framerate.
- * 
- * For example, if the framerate is set to 60 FPS, this event will be triggered
- * every 16.67 milliseconds.
+ * An event that gets triggered at regular intervals based on the configured 
+ * framerate (60 FPS = every 16.67 ms).
  */
 #define Update 130
 typedef struct {
@@ -45,7 +42,7 @@ typedef struct {
 } UpdateEvent;
 
 /**
- * @brief An event that gets triggered whenever a portal is created.
+ * An event that gets triggered whenever a portal is created.
  */
 #define PortalCreated 131
 typedef struct {
@@ -56,10 +53,10 @@ typedef struct {
 } PortalCreatedEvent;
 
 /**
- * @brief An event that gets triggered whenever a portal is destroyed.
+ * An event that gets triggered whenever a portal is destroyed.
  * 
- * @note - Both the client and frame windows are destroyed at this point, but
- * their ID's may still be used to perform any necessary cleanup.
+ * Both the client and frame windows are destroyed at this point, but their 
+ * ID's may still be used to perform any necessary cleanup.
  */
 #define PortalDestroyed 132
 typedef struct {
@@ -71,7 +68,7 @@ typedef struct {
 } PortalDestroyedEvent;
 
 /**
- * @brief An event that gets triggered whenever a portal is raised.
+ * An event that gets triggered whenever a portal is raised.
  */
 #define PortalRaised 133
 typedef struct {
@@ -82,7 +79,7 @@ typedef struct {
 } PortalRaisedEvent;
 
 /**
- * @brief An event that gets triggered when a portal is transformed.
+ * An event that gets triggered when a portal is transformed.
  */
 #define PortalTransformed 134
 typedef struct {
@@ -93,7 +90,7 @@ typedef struct {
 } PortalTransformedEvent;
 
 /**
- * @brief An event that gets triggered when a shortcut is pressed.
+ * An event that gets triggered when a shortcut is pressed.
  */
 #define ShortcutPressed 135
 typedef struct {
@@ -104,8 +101,8 @@ typedef struct {
 } ShortcutPressedEvent;
 
 /**
- * @brief An event triggered before the `ButtonPress` event, provided by the
- * XInput2 extension.
+ * An event triggered before the `ButtonPress` event, provided by the XInput2 
+ * extension.
  * 
  * It bypasses X11's event mask ownership system, at the cost of losing out on 
  * most of the data typically provided with a traditional `ButtonPress` event.
@@ -119,8 +116,8 @@ typedef struct {
 } RawButtonPressEvent;
 
 /**
- * @brief An event triggered before the `ButtonRelease` event, provided by the
- * XInput2 extension.
+ * An event triggered before the `ButtonRelease` event, provided by the XInput2 
+ * extension.
  * 
  * It bypasses X11's event mask ownership system, at the cost of losing out on 
  * most of the data typically provided with a traditional `ButtonRelease` event.
@@ -134,8 +131,8 @@ typedef struct {
 } RawButtonReleaseEvent;
 
 /**
- * @brief An event triggered before the `MotionNotify` event, provided by the
- * XInput2 extension.
+ * An event triggered before the `MotionNotify` event, provided by the XInput2 
+ * extension.
  * 
  * It bypasses X11's event mask ownership system, at the cost of losing out on 
  * all of the data typically provided with a traditional `MotionNotify` event.
@@ -148,8 +145,8 @@ typedef struct {
 } RawMotionNotifyEvent;
 
 /**
- * @brief An event triggered before the `KeyPress` event, provided by the
- * XInput2 extension.
+ * An event triggered before the `KeyPress` event, provided by the XInput2 
+ * extension.
  * 
  * It bypasses X11's event mask ownership system, at the cost of losing out on 
  * most of the data typically provided with a traditional `KeyPress` event.
@@ -163,8 +160,8 @@ typedef struct {
 } RawKeyPressEvent;
 
 /**
- * @brief An event triggered before the `KeyRelease` event, provided by the
- * XInput2 extension.
+ * An event triggered before the `KeyRelease` event, provided by the XInput2
+ * extension.
  * 
  * It bypasses X11's event mask ownership system, at the cost of losing out on 
  * most of the data typically provided with a traditional `KeyRelease` event.
@@ -178,10 +175,10 @@ typedef struct {
 } RawKeyReleaseEvent;
 
 /**
- * @brief A union of all possible event types that can be handled by the window
+ * A union of all possible event types that can be handled by the window
  * manager.
  * 
- * @note - This union matches the XEvent structure's memory layout, allowing 
+ * This union matches the XEvent structure's memory layout, allowing 
  * safe downcasting from XEvent to Event. Upcasting from Event to XEvent will 
  * result in undefined behavior and should be avoided.
  */
@@ -246,9 +243,7 @@ typedef union {
 } Event;
 
 /**
- * @brief Initiates an infinite event loop.
- * 
- * It handles X11/XInput2 events as they come in, and calls the appropriate 
- * registered event handlers.
+ * Initiates an infinite event loop, handling X11/XInput2 events as they come 
+ * in, and calling the appropriate registered event handlers.
  */
 void initialize_event_loop();

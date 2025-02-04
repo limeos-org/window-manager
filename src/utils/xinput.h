@@ -2,8 +2,8 @@
 #include "../all.h"
 
 /**
- * @brief Configures which events the XInput2 extension should listen for on a 
- * given window.
+ * Configures which events the XInput2 extension should listen for on a given
+ * window.
  * 
  * @param display The X11 display.
  * @param window The X11 window where the events should be listened for.
@@ -17,7 +17,7 @@
 int xi_select_input(Display *display, Window window, long mask);
 
 /**
- * @brief Retrieves the type of a given XInput2 device.
+ * Retrieves the type of a given XInput2 device.
  * 
  * @param display The X11 display.
  * @param device_id The ID of the XInput2 device.

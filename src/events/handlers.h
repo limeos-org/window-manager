@@ -2,16 +2,15 @@
 #include "../all.h"
 
 /**
- * @brief A macro that acts as the final expansion stage of the `HANDLE()` 
- * macro. 
+ * A macro that acts as the final expansion stage of the `HANDLE()` macro. 
  * 
  * It declares two functions: a registration function with the constructor
  * attribute, making it run automatically without needing to be called, and an 
  * event handler callback function.
  * 
- * It then defines the implementations of these
- * two functions: the registration function registers the event handler, and the
- * event handler callback function is left empty, to be filled in by the user.
+ * It then defines the implementations of these two functions: the registration 
+ * function registers the event handler, and the event handler callback function
+ * is left empty, to be filled in by the user.
  * 
  * @param type The event type.
  * @param count The counter value.
@@ -19,10 +18,8 @@
  * @warning Don't use directly! Use the `HANDLE()` macro instead.
  */
 #define HANDLE_IMPLEMENTATION(type, count) \
-    /* Declarations */ \
     static void register_handler_##type##_##count() __attribute__((constructor)); \
     static void handler_##type##_##count(__attribute__((unused)) Event *event); \
-    /* Implementations */ \
     static void register_handler_##type##_##count() \
     { \
         register_event_handler(type, &handler_##type##_##count); \
@@ -30,8 +27,8 @@
     static void handler_##type##_##count(__attribute__((unused)) Event *event)
 
 /**
- * @brief A macro that acts as the intermediary expansion stage of the 
- * `HANDLE()` macro.
+ * A macro that acts as the intermediary expansion stage of the `HANDLE()`
+ * macro.
  * 
  * It adds the `count` parameter, used to prevent naming collisions.
  * 
@@ -43,7 +40,7 @@
 #define HANDLE_EXPANDED(type, count) HANDLE_IMPLEMENTATION(type, count)
 
 /**
- * @brief A macro that simplifies the process of creating and registering event
+ * A macro that simplifies the process of creating and registering event
  * handlers.
  * 
  * @param type The event type.
@@ -51,14 +48,14 @@
 #define HANDLE(type) HANDLE_EXPANDED(type, __COUNTER__)
 
 /**
- * @brief Event handler callback function signature.
+ * Event handler callback function signature.
  * 
  * @param event The event structure.
  */
 typedef void EventCallback(Event *event);
 
 /**
- * @brief Registers an event handler for a given event type.
+ * Registers an event handler for a given event type.
  * 
  * @param type The event type.
  * @param callback The event handler callback function.
@@ -68,8 +65,7 @@ typedef void EventCallback(Event *event);
 void register_event_handler(int type, EventCallback *callback);
 
 /**
- * @brief Calls all registered event handler callback functions for a given 
- * event type.
+ * Calls all registered event handler callback functions for a given event type.
  * 
  * @param event The event structure, where the `type` field is used to determine
  * which event handlers to call.

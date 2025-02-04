@@ -2,12 +2,12 @@
 #include "../all.h"
 
 /**
- * @brief Alias for the `x_get_default_display()` function.
+ * Alias for the `x_get_default_display()` function.
  */
 #define DefaultDisplay x_get_default_display()
 
 /**
- * @brief Sets the default X11 display for global access across the codebase.
+ * Sets the default X11 display for global access across the codebase.
  * 
  * @param display The X11 display.
  * 
@@ -17,8 +17,7 @@
 void x_set_default_display(Display *display);
 
 /**
- * @brief Retrieves the default X11 display for global access across the 
- * codebase.
+ * Retrieves the default X11 display for global access across the codebase.
  * 
  * @return - `Display*` - The default X11 display.
  * @return - `NULL` - The default display has not been set.
@@ -31,14 +30,14 @@ void x_set_default_display(Display *display);
 Display *x_get_default_display();
 
 /**
- * @brief Retrieves the current time.
+ * Retrieves the current time.
  * 
  * @return - `Time` - The current time.
  */
 Time x_get_current_time();
 
 /**
- * @brief Retrieves the process ID of the X client that owns the window.
+ * Retrieves the process ID of the X client that owns the window.
  * 
  * @param display The X11 display.
  * @param window The target window.
@@ -53,7 +52,7 @@ Time x_get_current_time();
 pid_t x_get_window_pid(Display *display, Window window);
 
 /**
- * @brief Retrieves the parent window of a given window.
+ * Retrieves the parent window of a given window.
  * 
  * @param display The X11 display.
  * @param window The target window.
@@ -64,7 +63,7 @@ pid_t x_get_window_pid(Display *display, Window window);
 Window x_get_window_parent(Display *display, Window window);
 
 /**
- * @brief Retrieves the name of an X11 window.
+ * Retrieves the name of an X11 window.
  * 
  * @param display The X11 display.
  * @param window The window to retrieve the name for.
@@ -77,7 +76,7 @@ Window x_get_window_parent(Display *display, Window window);
 int x_get_window_name(Display *display, Window window, char *out_name, size_t name_size);
 
 /**
- * @brief Checks if a window supports a given protocol.
+ * Checks if a window supports a given protocol.
  * 
  * @param display The X11 display.
  * @param window The window to check.
@@ -89,7 +88,7 @@ int x_get_window_name(Display *display, Window window, char *out_name, size_t na
 bool x_window_supports_protocol(Display *display, Window window, Atom protocol);
 
 /**
- * @brief Checks if a window exists.
+ * Checks if a window exists.
  * 
  * @param display The X11 display.
  * @param window The window to check.
@@ -100,7 +99,7 @@ bool x_window_supports_protocol(Display *display, Window window, Atom protocol);
 bool x_window_exists(Display *display, Window window);
 
 /**
- * @brief Converts a key name to a key symbol.
+ * Converts a key name to a key symbol.
  * 
  * @param name The string containing the key name.
  * @param out_key The buffer where the key symbol will be stored.
@@ -115,7 +114,7 @@ bool x_window_exists(Display *display, Window window);
 int x_key_name_to_symbol(const char *name, int *out_key);
 
 /**
- * @brief Converts multiple key names to multiple key symbols.
+ * Converts multiple key names to multiple key symbols.
  * 
  * @param names The string containing the key names.
  * @param delimiter The delimiter used to separate the key names.
@@ -131,7 +130,7 @@ int x_key_name_to_symbol(const char *name, int *out_key);
 int x_key_names_to_symbols(char *names, const char delimiter, int *out_keys, int keys_size);
 
 /**
- * @brief Queries the children of a window recursively.
+ * Queries the children of a window recursively.
  * 
  * @param display The X11 display.
  * @param parent The parent window.
@@ -147,8 +146,8 @@ int x_key_names_to_symbols(char *names, const char delimiter, int *out_keys, int
 int x_query_tree_recursively(Display *display, Window parent, Window **out_children, unsigned int *out_children_count);
 
 /**
- * @brief A wrapper of the `XCreateSimpleWindow()` Xlib function, with some 
- * minor additional functionality.
+ * A wrapper of the `XCreateSimpleWindow()` Xlib function, with some minor
+ * additional functionality.
  * 
  * The difference between this function and `XCreateSimpleWindow()` is that this
  * function also sets the `_NET_WM_PID` property to the window, containing the 
@@ -164,7 +163,7 @@ int x_query_tree_recursively(Display *display, Window parent, Window **out_child
  * @param border_pixel The border pixel of the window.
  * @param background The background color of the window.
  * 
- * @return - `Window` - The created window.
+ * @return The created window.
  */
 Window x_create_simple_window(
     Display *display,
