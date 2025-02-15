@@ -4,8 +4,6 @@ static RawButtonPressEvent construct_raw_button_press_event(XIRawEvent *raw_even
 {
     RawButtonPressEvent event = {
         .type = RawButtonPress,
-        .display = raw_event->display,
-        .root_window = DefaultRootWindow(DefaultDisplay),
         .button = raw_event->detail,
     };
     return event;
@@ -15,8 +13,6 @@ static RawButtonReleaseEvent construct_raw_button_release_event(XIRawEvent *raw_
 {
     RawButtonReleaseEvent event = {
         .type = RawButtonRelease,
-        .display = raw_event->display,
-        .root_window = DefaultRootWindow(DefaultDisplay),
         .button = raw_event->detail,
     };
     return event;
@@ -24,10 +20,9 @@ static RawButtonReleaseEvent construct_raw_button_release_event(XIRawEvent *raw_
 
 static RawMotionNotifyEvent construct_raw_motion_notify_event(XIRawEvent *raw_event)
 {
+    (void)raw_event;
     RawMotionNotifyEvent event = {
         .type = RawMotionNotify,
-        .display = raw_event->display,
-        .root_window = DefaultRootWindow(DefaultDisplay),
     };
     return event;
 }
@@ -36,8 +31,6 @@ static RawKeyPressEvent construct_raw_key_press_event(XIRawEvent *raw_event)
 {
     RawKeyPressEvent event = {
         .type = RawKeyPress,
-        .display = raw_event->display,
-        .root_window = DefaultRootWindow(DefaultDisplay),
         .key_code = raw_event->detail,
     };
     return event;
@@ -47,8 +40,6 @@ static RawKeyReleaseEvent construct_raw_key_release_event(XIRawEvent *raw_event)
 {
     RawKeyReleaseEvent event = {
         .type = RawKeyRelease,
-        .display = raw_event->display,
-        .root_window = DefaultRootWindow(DefaultDisplay),
         .key_code = raw_event->detail,
     };
     return event;

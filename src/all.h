@@ -15,6 +15,7 @@
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <execinfo.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <ctype.h>
@@ -51,15 +52,16 @@
 #include "utils/xinput.h"
 #include "utils/log.h"
 
+#include "portals/portals.h"
+#include "portals/frames.h"
+#include "portals/clients.h"
+#include "portals/input.h"
+#include "portals/focus.h"
+#include "portals/triggers.h"
+// #include "portals/dragging.h"
+// #include "portals/resizing.h"
+// #include "portals/title.h"
+
 #include "events/events.h"
 #include "events/handlers.h"
 #include "events/xinput.h"
-
-// #include "portals/portals.h"
-// #include "portals/dragging.h"
-// #include "portals/focus.h"
-// #include "portals/buttons.h"
-// #include "portals/frames.h"
-// #include "portals/clients.h"
-// #include "portals/resizing.h"
-// #include "portals/title.h"

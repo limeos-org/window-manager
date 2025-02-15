@@ -11,6 +11,9 @@ static const char *libraries[] = {
 
 static int custom_x_error_handler(Display *display, XErrorEvent *error)
 {
+    // Ignore BadWindow errors.
+    if (error->error_code == BadWindow) return 0;
+
     // Retrieve the error text.
     char error_text[1024];
     XGetErrorText(display, error->error_code, error_text, sizeof(error_text));
@@ -59,6 +62,9 @@ int main()
 
     // Set a custom X11 error handler.
     XSetErrorHandler(custom_x_error_handler);
+
+    // TEMP - Remove me after marker logic reintroduced.
+    XDefineCursor(display, DefaultRootWindow(display), XCreateFontCursor(display, XC_left_ptr));
 
     // Initialize the event loop.
     initialize_event_loop();

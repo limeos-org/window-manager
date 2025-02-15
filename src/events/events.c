@@ -35,16 +35,12 @@ void initialize_event_loop()
 
     // Call all event handlers of the Prepare event.
     call_event_handlers((Event*)&(PrepareEvent){
-        .type = Prepare,
-        .display = display,
-        .root_window = root_window,
+        .type = Prepare
     });
 
     // Call all event handlers of the Initialize event.
     call_event_handlers((Event*)&(InitializeEvent){
-        .type = Initialize,
-        .display = display,
-        .root_window = root_window,
+        .type = Initialize
     });
 
     while (true)
@@ -108,9 +104,7 @@ void initialize_event_loop()
         {
             // Call all event handlers of the Update event.
             call_event_handlers((Event*)&(UpdateEvent){
-                .type = Update,
-                .display = display,
-                .root_window = root_window,
+                .type = Update
             });
 
             // Update the last update time.
