@@ -137,8 +137,8 @@ int x_key_names_to_symbols(char *names, const char delimiter, int *out_keys, int
  * @param out_children The buffer where the children will be stored.
  * @param out_children_count The buffer where the children count will be stored.
  * 
- * @return - `0` - The query was successful.
- * @return - `-1` - The query failed.
+ * @return - `0` - The query was completed succesfully.
+ * @return - `-1` - The query failed, memory allocation error.
  * 
  * @warning - Recursive X server calls make this function slow and 
  * resource-intensive.

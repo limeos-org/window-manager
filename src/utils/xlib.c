@@ -227,19 +227,34 @@ static int _x_query_tree_recursively(
 )
 {
     // Query the children of the parent.
-    Window *children;
-    unsigned int children_count;
+    Window *children = NULL;
+    unsigned int children_count = 0;
     if (XQueryTree(display, parent, &(Window){0}, &(Window){0}, &children, &children_count) == 0)
     {
-        return -1;
+        // Removing this window from the out_children array, as the query 
+        // failed. This is most likely because the window was destroyed.
+        if (*out_children != NULL && *out_children_count > 0 && *out_current_position > 0)
+        {
+            (*out_current_position)--;
+            (*out_children_count)--;
+            (*out_children)[*out_current_position] = None;
+        }
+        return 0;
     }
 
     // Ensure we don't handle parents without children.
     if (children_count == 0) return 0;
 
-    // Recalculate the output children count and reallocate memory for them.
+    // Increase the output children count and reallocate memory for them.
     *out_children_count += children_count;
-    *out_children = realloc(*out_children, (*out_children_count) * sizeof(Window));
+    Window *new_out_children = realloc(*out_children, (*out_children_count) * sizeof(Window));
+    if (new_out_children == NULL)
+    {
+        *out_children_count -= children_count;
+        XFree(children);
+        return -1;
+    }
+    *out_children = new_out_children;
 
     // Iterate over each child from the tree query.
     for (unsigned int i = 0; i < children_count; i++) {

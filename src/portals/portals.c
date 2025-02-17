@@ -33,9 +33,23 @@ static Portal *register_portal(
     // Allocate additional memory, if neccessary.
     if (registry.count > registry.capacity)
     {
-        registry.capacity = registry.capacity == 0 ? 2 : registry.count * 2;
-        registry.unsorted = realloc(registry.unsorted, registry.capacity * sizeof(Portal));
-        registry.sorted = realloc(registry.sorted, registry.capacity * sizeof(Portal *));
+        // Calculate the new capacity.
+        size_t new_capacity = registry.capacity == 0 ? 2 : registry.count * 2;
+
+        // Allocate memory for portals arrays.
+        Portal *new_unsorted = realloc(registry.unsorted, new_capacity * sizeof(Portal));
+        Portal **new_sorted = realloc(registry.sorted, new_capacity * sizeof(Portal *));
+        if (new_unsorted == NULL || new_sorted == NULL) {
+            if (new_unsorted != NULL) free(new_unsorted);
+            if (new_sorted != NULL) free(new_sorted);
+            LOG_ERROR("Could not register portal, memory allocation failed.");
+            return NULL;
+        }
+
+        // Update the registry.
+        registry.unsorted = new_unsorted;
+        registry.sorted = new_sorted;
+        registry.capacity = new_capacity;
     }
 
     // Add the portal to the registry.
@@ -105,12 +119,8 @@ static void sort_portals()
     );
     if (status != 0)
     {
-        if (windows != NULL) free(windows);
-        LOG_ERROR(
-            "Could not sort portals, "
-            "failed to query the window tree (Status: %d).",
-            status
-        );
+        LOG_ERROR("Could not sort portals (Status: %d).", status);
+        free(windows);
         return;
     }
 
@@ -123,7 +133,7 @@ static void sort_portals()
         if (portal == NULL) continue;
 
         // Ensure we only handle client windows, and not frame windows as well,
-        // preventing duplicate entries in the sorted array.
+        // preventing duplicate entries in the sorted portals array.
         if (windows[i] != portal->client_window) continue;
 
         // Add portal to the sorted array.
@@ -551,7 +561,7 @@ void map_portal(Portal *portal)
     if (portal->initialized == false)
     {
         // Create a frame for the portal, if necessary.
-        if (!is_portal_frame_valid(portal) && should_portal_be_framed(portal))
+        if (should_portal_be_framed(portal))
         {
             create_portal_frame(portal);
         }
@@ -605,10 +615,15 @@ Portal *find_portal_by_window(Window window)
     // the specified window.
     for (int i = 0; i < (int)registry.count; i++)
     {
-        if (registry.unsorted[i].frame_window == window ||
-            registry.unsorted[i].client_window == window)
+        // Skip invalid portals.
+        Portal *portal = &registry.unsorted[i];
+        if (portal == NULL) continue;
+
+        // Check if the portal is associated with the specified window.
+        if (portal->frame_window == window ||
+            portal->client_window == window)
         {
-            return &registry.unsorted[i];
+            return portal;
         }
     }
     return NULL;
@@ -620,12 +635,18 @@ Portal *find_portal_at_pos(int x_root, int y_root)
     // portal at the specified position.
     for (int i = registry.count - 1; i >= 0; i--)
     {
-        if (x_root >= registry.sorted[i]->x_root &&
-            y_root >= registry.sorted[i]->y_root &&
-            x_root < registry.sorted[i]->x_root + (int)registry.sorted[i]->width &&
-            y_root < registry.sorted[i]->y_root + (int)registry.sorted[i]->height)
+        // Skip invalid portals.
+        Portal *portal = registry.sorted[i];
+        if (portal == NULL) continue;
+        if (portal->initialized == false) continue;
+
+        // Check if the portal is located at the specified position.
+        if (x_root >= portal->x_root &&
+            y_root >= portal->y_root &&
+            x_root < portal->x_root + (int)portal->width &&
+            y_root < portal->y_root + (int)portal->height)
         {
-            return &(*registry.sorted[i]);
+            return portal;
         }
     }
     return NULL;
