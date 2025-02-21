@@ -286,6 +286,33 @@ int x_query_tree_recursively(Display *display, Window parent, Window **out_child
     return _x_query_tree_recursively(display, parent, out_children, out_children_count, &current_position);
 }
 
+bool x_window_is_top_level(Display *display, Window window)
+{
+    Window root_window = DefaultRootWindow(display);
+
+    // Retrieve the parent window of the provided window.
+    Window parent_window = x_get_window_parent(display, window);
+
+    // Retrieve the attributes of the provided window.
+    XWindowAttributes attributes;
+    if (XGetWindowAttributes(display, window, &attributes) == 0)
+    {
+        LOG_WARNING(
+            "Could not determine whether window (0x%lx) is top-level, window "
+            "attributes unavailable. Falling back to 'false' (Not top-level).",
+            window
+        );
+        return false;
+    }
+
+    // Determine if window is a top-level window.
+    if (parent_window == root_window && attributes.override_redirect == False)
+    {
+        return true;
+    }
+    return false;
+}
+
 Window x_create_simple_window(
     Display *display,
     Window parent,

@@ -1,5 +1,6 @@
 #include "../all.h"
 
+// TODO: Remove this, it's temporary.
 #undef UINT_MAX
 #define UINT_MAX (0x7fffffff * 2U + 1U)
 
@@ -20,6 +21,7 @@ static PortalRegistry registry = {
 static Portal *register_portal(
     const char *title, 
     bool initialized,
+    bool top_level,
     int x_root, int y_root, 
     unsigned int width, unsigned int height, 
     Window frame_window,
@@ -34,28 +36,34 @@ static Portal *register_portal(
     if (registry.count > registry.capacity)
     {
         // Calculate the new capacity.
-        size_t new_capacity = registry.capacity == 0 ? 2 : registry.count * 2;
+        registry.capacity = registry.capacity == 0 ? 2 : registry.capacity * 2;
 
-        // Allocate memory for portals arrays.
-        Portal *new_unsorted = realloc(registry.unsorted, new_capacity * sizeof(Portal));
-        Portal **new_sorted = realloc(registry.sorted, new_capacity * sizeof(Portal *));
-        if (new_unsorted == NULL || new_sorted == NULL) {
-            if (new_unsorted != NULL) free(new_unsorted);
-            if (new_sorted != NULL) free(new_sorted);
+        // Reallocate memory for the unsorted portals array.
+        Portal *new_unsorted = realloc(registry.unsorted, registry.capacity * sizeof(Portal));
+        if (new_unsorted == NULL) {
             LOG_ERROR("Could not register portal, memory allocation failed.");
+            free(new_unsorted);
+            registry.count--;
             return NULL;
         }
-
-        // Update the registry.
         registry.unsorted = new_unsorted;
+
+        // Reallocate memory for the sorted portals array.
+        Portal **new_sorted = realloc(registry.sorted, registry.capacity * sizeof(Portal *));
+        if (new_unsorted == NULL) {
+            LOG_ERROR("Could not register portal, memory allocation failed.");
+            free(new_sorted);
+            registry.count--;
+            return NULL;
+        }
         registry.sorted = new_sorted;
-        registry.capacity = new_capacity;
     }
 
     // Add the portal to the registry.
     registry.unsorted[registry.count - 1] = (Portal){
         .title = strdup(title),
         .initialized = initialized,
+        .top_level = top_level,
         .x_root = x_root,
         .y_root = y_root,
         .width = width,
@@ -83,8 +91,7 @@ static void unregister_portal(Portal *portal)
     if (index == -1)
     {
         LOG_ERROR(
-            "Could not unregister provided portal (%p), "
-            "portal not found in registry.",
+            "Could not unregister portal (%p), portal not found in registry.",
             (void*)portal
         );
         return;
@@ -205,6 +212,7 @@ Portal *create_portal(Window client_window)
     Portal *portal = register_portal(
         portal_title,       // Title
         false,              // Initialized
+        false,              // Top Level
         portal_x_root,      // X (Relative to root)
         portal_y_root,      // Y (Relative to root)
         portal_width,       // Width
@@ -213,6 +221,9 @@ Portal *create_portal(Window client_window)
         NULL,               // Frame Cairo Context
         client_window       // Client Window
     );
+
+    // Re-sort the portals.
+    sort_portals();
 
     // Call all event handlers of the PortalCreated event.
     call_event_handlers((Event*)&(PortalCreatedEvent){
@@ -560,8 +571,11 @@ void map_portal(Portal *portal)
     // Handle the portals first time being mapped.
     if (portal->initialized == false)
     {
+        // Determine whether the portals client window is a top-level window.
+        portal->top_level = x_window_is_top_level(display, portal->client_window);
+
         // Create a frame for the portal, if necessary.
-        if (should_portal_be_framed(portal))
+        if (portal->top_level == true)
         {
             create_portal_frame(portal);
         }
@@ -587,6 +601,12 @@ void map_portal(Portal *portal)
 
     // Re-sort the portals.
     sort_portals();
+
+    // Call all event handlers of the PortalMapped event.
+    call_event_handlers((Event*)&(PortalMappedEvent){
+        .type = PortalMapped,
+        .portal = portal
+    });
 }
 
 void unmap_portal(Portal *portal)
@@ -607,6 +627,24 @@ void unmap_portal(Portal *portal)
 
     // Re-sort the portals.
     sort_portals();
+
+    // Call all event handlers of the PortalUnmapped event.
+    call_event_handlers((Event*)&(PortalUnmappedEvent){
+        .type = PortalUnmapped,
+        .portal = portal
+    });
+}
+
+Portal *get_unsorted_portals(unsigned int *out_count)
+{
+    *out_count = registry.count;
+    return registry.unsorted;
+}
+
+Portal **get_sorted_portals(unsigned int *out_count)
+{
+    *out_count = registry.count;
+    return registry.sorted;
 }
 
 Portal *find_portal_by_window(Window window)
@@ -615,8 +653,9 @@ Portal *find_portal_by_window(Window window)
     // the specified window.
     for (int i = 0; i < (int)registry.count; i++)
     {
-        // Skip invalid portals.
         Portal *portal = &registry.unsorted[i];
+
+        // Skip invalid portals.
         if (portal == NULL) continue;
 
         // Check if the portal is associated with the specified window.
@@ -635,8 +674,9 @@ Portal *find_portal_at_pos(int x_root, int y_root)
     // portal at the specified position.
     for (int i = registry.count - 1; i >= 0; i--)
     {
-        // Skip invalid portals.
         Portal *portal = registry.sorted[i];
+
+        // Skip invalid portals.
         if (portal == NULL) continue;
         if (portal->initialized == false) continue;
 

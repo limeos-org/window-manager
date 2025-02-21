@@ -43,14 +43,14 @@
 // #include "shortcuts/terminal.h"
 // #include "shortcuts/exit.h"
 
-// #include "ewmh/ewmh.h"
-// #include "ewmh/client_list.h"
-// #include "ewmh/active_window.h"
-
 #include "utils/utils.h"
 #include "utils/xlib.h"
 #include "utils/xinput.h"
 #include "utils/log.h"
+
+#include "ewmh/ewmh.h"
+#include "ewmh/client_list.h"
+// #include "ewmh/active_window.h"
 
 #include "portals/portals.h"
 #include "portals/frames.h"

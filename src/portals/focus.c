@@ -5,11 +5,23 @@ Portal *last_focused_portal = NULL;
 HANDLE(PortalButtonPress)
 {
     PortalButtonPressEvent *_event = &event->portal_button_press;
+    Portal *portal = _event->portal;
 
-    // Ensure the portal hasn't already been focused.
-    if (last_focused_portal == _event->portal) return;
+    // Ensure the portal hasn't already been focused, preventing
+    // unnecessary code execution.
+    if (last_focused_portal == portal) return;
 
-    // Raise the portal.
-    raise_portal(_event->portal);
-    last_focused_portal = _event->portal;
+    // Set input focus on the portal client window.
+    XSetInputFocus(
+        DefaultDisplay,         // Display
+        portal->client_window,  // Window
+        RevertToParent,         // Revert To
+        CurrentTime             // Time
+    );
+
+    // Raise the portal windows.
+    raise_portal(portal);
+
+    // Store the last focused portal.
+    last_focused_portal = portal;
 }

@@ -33,6 +33,7 @@
 typedef struct {
     char *title;
     bool initialized;
+    bool top_level;
     int x_root, y_root;
     unsigned int width, height;
     Window frame_window;
@@ -93,6 +94,16 @@ void map_portal(Portal *portal);
  * @param portal The portal to unmap.
  */
 void unmap_portal(Portal *portal);
+
+/**
+ * TODO: Document this function.
+ */
+Portal *get_unsorted_portals(unsigned int *count);
+
+/**
+ * TODO: Document this function.
+ */
+Portal **get_sorted_portals(unsigned int *count);
 
 /**
  * Finds a portal in the portal registry using the `window` provided.

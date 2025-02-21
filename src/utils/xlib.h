@@ -146,6 +146,20 @@ int x_key_names_to_symbols(char *names, const char delimiter, int *out_keys, int
 int x_query_tree_recursively(Display *display, Window parent, Window **out_children, unsigned int *out_children_count);
 
 /**
+ * Checks if a window is a top-level window.
+ * 
+ * A top-level window, according to the ICCCM standard, is a window that has the
+ * root window as its parent and is not an override-redirect window.
+ * 
+ * @param display The X11 display.
+ * @param window The window to check.
+ * 
+ * @return - `true` - The window is a top-level window.
+ * @return - `false` - The window is not a top-level window.
+ */
+bool x_window_is_top_level(Display *display, Window window);
+
+/**
  * A wrapper of the `XCreateSimpleWindow()` Xlib function, with some minor
  * additional functionality.
  * 
