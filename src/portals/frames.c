@@ -7,9 +7,8 @@ bool should_portal_be_framed(Portal *portal)
     Window client_window = portal->client_window;
 
     // ICCCM (Section 4.1.4) states that window managers should decorate 
-    // top-level windows, which are usually direct children of the root 
-    // window. ICCCM (Section 4.1.1) defines a top-level window as one that 
-    // is a direct child of the root window and does not have the
+    // top-level windows. ICCCM (Section 4.1.1) defines a top-level window as 
+    // one that is a direct child of the root window and does not have the
     // override_redirect attribute set to true.
 
     // Retrieve the parent window of the client window.

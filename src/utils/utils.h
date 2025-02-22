@@ -2,6 +2,30 @@
 #include "../all.h"
 
 /**
+ * TODO: Document this.
+ */
+#ifdef true
+    #undef true
+#endif
+#define true 1
+
+/**
+ * TODO: Document this.
+ */
+#ifdef false
+    #undef false
+#endif
+#define false 0
+
+/**
+ * TODO: Document this.
+ */
+#ifdef scope
+    #undef scope
+#endif
+#define scope /**/
+
+/**
  * Checks if a shared library is available. 
  * 
  * @param name The `.so` file name of the shared library.

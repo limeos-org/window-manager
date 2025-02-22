@@ -8,21 +8,25 @@
 
 /**
  * The minimum width of a portal in pixels.
+ * TODO: This is currently unused, re-implement min/max portal width.
  */
 #define MINIMUM_PORTAL_WIDTH 200
 
 /**
  * The minimum height of a portal in pixels.
+ * TODO: This is currently unused, re-implement min/max portal width.
  */
 #define MINIMUM_PORTAL_HEIGHT 150
 
 /**
  * The maximum initial width of a portal as a percentage of the screen width.
+ * TODO: This is currently unused, re-implement min/max portal width.
  */
 #define MAXIMUM_INITIAL_PORTAL_WIDTH_PERCENT 0.8
 
 /**
  * The maximum initial height of a portal as a percentage of the screen width.
+ * TODO: This is currently unused, re-implement min/max portal width.
  */
 #define MAXIMUM_INITIAL_PORTAL_HEIGHT_PERCENT 0.8
 
@@ -34,12 +38,18 @@ typedef struct {
     char *title;
     bool initialized;
     bool top_level;
+    bool mapped;
     int x_root, y_root;
     unsigned int width, height;
     Window frame_window;
     cairo_t *frame_cr;
     Window client_window;
 } Portal;
+
+// TODO: Document & sort.
+Portal *create_portal(Window client_window);
+void unregister_portal(Portal *portal);
+void sort_portals();
 
 /**
  * Creates a portal and registers it to the portal registry.
@@ -64,12 +74,12 @@ void destroy_portal(Portal *portal);
 /**
  * TODO: Document this function.
  */
-void move_portal(Portal *portal, int x_root, int y_root, bool move_windows);
+void move_portal(Portal *portal, int x_root, int y_root);
 
 /**
  * TODO: Document this function.
  */
-void resize_portal(Portal *portal, unsigned int width, unsigned int height, bool resize_windows);
+void resize_portal(Portal *portal, unsigned int width, unsigned int height);
 
 /**
  * TODO: Document this function.
@@ -94,6 +104,11 @@ void map_portal(Portal *portal);
  * @param portal The portal to unmap.
  */
 void unmap_portal(Portal *portal);
+
+/**
+ * TODO: Document this function.
+ */
+int get_portal_index(Portal *portal);
 
 /**
  * TODO: Document this function.

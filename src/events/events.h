@@ -53,9 +53,18 @@ typedef struct {
 } PortalDestroyedEvent;
 
 /**
+ * An event that gets triggered whenever a portal is initialized.
+ */
+#define PortalInitialized 133
+typedef struct {
+    int type;
+    Portal *portal;
+} PortalInitializedEvent;
+
+/**
  * An event that gets triggered whenever a portal is raised.
  */
-#define PortalRaised 133
+#define PortalRaised 134
 typedef struct {
     int type;
     Portal *portal;
@@ -64,7 +73,7 @@ typedef struct {
 /**
  * An event that gets triggered when a portal is moved or resized.
  */
-#define PortalTransformed 134
+#define PortalTransformed 135
 typedef struct {
     int type;
     Portal *portal;
@@ -73,7 +82,7 @@ typedef struct {
 /**
  * An event that gets triggered when a portal is mapped.
  */
-#define PortalMapped 135
+#define PortalMapped 136
 typedef struct {
     int type;
     Portal *portal;
@@ -82,7 +91,7 @@ typedef struct {
 /**
  * An event that gets triggered when a portal is unmapped.
  */
-#define PortalUnmapped 136
+#define PortalUnmapped 137
 typedef struct {
     int type;
     Portal *portal;
@@ -91,7 +100,7 @@ typedef struct {
 /**
  * An event triggered when a pointer button is pressed on a portal.
  */
-#define PortalButtonPress 137
+#define PortalButtonPress 138
 typedef struct {
     int type;
     Portal *portal;
@@ -103,7 +112,7 @@ typedef struct {
 /**
  * An event triggered when a pointer button is released on a portal.
  */
-#define PortalButtonRelease 138
+#define PortalButtonRelease 139
 typedef struct {
     int type;
     Portal *portal;
@@ -115,7 +124,7 @@ typedef struct {
 /**
  * An event triggered when a pointer hovers over a portal.
  */
-#define PortalMotionNotify 139
+#define PortalMotionNotify 140
 typedef struct {
     int type;
     Portal *portal;
@@ -126,7 +135,7 @@ typedef struct {
 /**
  * An event that gets triggered when a shortcut is pressed.
  */
-#define ShortcutPressed 140
+#define ShortcutPressed 141
 typedef struct {
     int type;
     char *name;
@@ -139,7 +148,7 @@ typedef struct {
  * It bypasses X11's event mask ownership system, at the cost of losing out on 
  * most of the data typically provided with a traditional `ButtonPress` event.
  */
-#define RawButtonPress 141
+#define RawButtonPress 142
 typedef struct {
     int type;
     int button;
@@ -152,7 +161,7 @@ typedef struct {
  * It bypasses X11's event mask ownership system, at the cost of losing out on 
  * most of the data typically provided with a traditional `ButtonRelease` event.
  */
-#define RawButtonRelease 142
+#define RawButtonRelease 143
 typedef struct {
     int type;
     int button;
@@ -165,7 +174,7 @@ typedef struct {
  * It bypasses X11's event mask ownership system, at the cost of losing out on 
  * all of the data typically provided with a traditional `MotionNotify` event.
  */
-#define RawMotionNotify 143
+#define RawMotionNotify 144
 typedef struct {
     int type;
 } RawMotionNotifyEvent;
@@ -177,7 +186,7 @@ typedef struct {
  * It bypasses X11's event mask ownership system, at the cost of losing out on 
  * most of the data typically provided with a traditional `KeyPress` event.
  */
-#define RawKeyPress 144
+#define RawKeyPress 145
 typedef struct {
     int type;
     int key_code;
@@ -190,7 +199,7 @@ typedef struct {
  * It bypasses X11's event mask ownership system, at the cost of losing out on 
  * most of the data typically provided with a traditional `KeyRelease` event.
  */
-#define RawKeyRelease 145
+#define RawKeyRelease 146
 typedef struct {
     int type;
     int key_code;
@@ -215,6 +224,9 @@ typedef union {
     // Portal events.
     PortalCreatedEvent portal_created;
     PortalDestroyedEvent portal_destroyed;
+    PortalInitializedEvent portal_initialized;
+    PortalMappedEvent portal_mapped;
+    PortalUnmappedEvent portal_unmapped;
     PortalRaisedEvent portal_raised;
     PortalTransformedEvent portal_transformed;
     PortalButtonPressEvent portal_button_press;

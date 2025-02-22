@@ -52,9 +52,6 @@ HANDLE(CreateNotify)
     pid_t pid = x_get_window_pid(display, _event->window);
     if (pid == getpid()) return;
 
-    // Choose which window events we should listen for.
-    XSelectInput(display, _event->window, SubstructureNotifyMask);
-
     // Create a portal for the window.
     create_portal(_event->window);
 }
