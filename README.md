@@ -4,14 +4,14 @@
   <img alt="LimeOS Banner">
 </picture>
 
-###
+######
 
 This window manager for X11 seamlessly blends the best of both tiled and 
 floating window management. Designed with minimalism and elegance in mind,
 it aims to provide a clean and uncluttered interface while still delivering all
 the essential functionalities that users expect from a modern window manager.
 
-## Contributing
+### Contributing
 
 We welcome all contributions that help shape and improve this project. Whether 
 you're reporting bugs, suggesting new features, improving documentation, or 
@@ -21,7 +21,7 @@ beforehand.
 
 To get started, see the `CONTRIBUTING.md` file.
 
-## License
+### License
 
 This project is licensed under the GPL-3.0 License. This license reflects our 
 commitment to ensuring that this software remains free and open-source. 
