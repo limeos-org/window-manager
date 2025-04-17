@@ -253,7 +253,6 @@ Below are the specific file and code element naming conventions to follow within
 
  - Follow `snake_case()` convention.  
  - Typically follow a verb-noun structure (e.g., `write_to_buffer()`).  
- - Functions inside of a module must incorporate that module's name.  
  - Incorporate the name of the module they're in (e.g., `read_config()` in `config` module).
 
 #### Variable Names
