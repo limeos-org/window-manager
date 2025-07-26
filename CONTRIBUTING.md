@@ -27,6 +27,8 @@ This document outlines the guidelines for contributing to this repository, inclu
  - [Understanding the Git Workflow](#understanding-the-git-workflow)  
  - [Determining version numbers](#determining-version-numbers)  
 
+&nbsp;
+
 ## Repository Contributing Guidelines
 
 ### Building the window manager
@@ -145,6 +147,8 @@ For development purposes, it is advisable to use the nested X server approach. H
    DISPLAY=:1 /path/to/limeos-window-manager
    ```
 </details>
+
+&nbsp;
 
 ## Language Contributing Guidelines
 
@@ -335,6 +339,8 @@ src/
 │   ├── feature.c
 │   └── feature.h
 ```
+
+&nbsp;
 
 ## General Contributing Guidelines
 
