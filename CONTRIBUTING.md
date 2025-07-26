@@ -1,7 +1,9 @@
 <picture>
+   <!-- The media queries determine the image based on website theme -->
   <source media="(prefers-color-scheme: dark)" srcset=".github/contributing_banner_white.png">
   <source media="(prefers-color-scheme: light)" srcset=".github/contributing_banner_black.png">
-  <img alt="LimeOS Banner">
+  <!-- Fallback to the black variant if no match -->
+  <img alt="LimeOS Banner" src=".github/contributing_banner_black.png">
 </picture>
 
 ######
