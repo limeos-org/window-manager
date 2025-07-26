@@ -1,52 +1,45 @@
 <picture>
+   <!-- The media queries determine the image based on website theme -->
   <source media="(prefers-color-scheme: dark)" srcset=".github/contributing_banner_white.png">
   <source media="(prefers-color-scheme: light)" srcset=".github/contributing_banner_black.png">
-  <img alt="LimeOS Banner">
+  <!-- Fallback to the black variant if no match -->
+  <img alt="LimeOS Banner" src=".github/contributing_banner_black.png">
 </picture>
 
-###
+######
 
-This document outlines the guidelines for contributing to this repository. It consists of two primary sections:  
-
-•&emsp;Repository Contributing Guidelines - Guidelines specific to this repository.  
-•&emsp;General Contributing Guidelines - Guidelines for all LimeOS repositories.  
-
-When conflicts arise between these sections, always follow the repository-specific guidelines as they take precedence over general guidelines.
+This document outlines the guidelines for contributing to this repository, including best practices for code contributions and other relevant procedures. It is primarily divided into three sections: the repository guidelines, the language guidelines and the general guidelines. In the event of any conflicts between these sections, the section listed first will take precedence.
 
 ### Table of Contents
 
-**Repository Contributing Guidelines**  
-•&emsp;[Building the executable](#building-the-executable)  
-•&emsp;[Running the executable](#running-the-executable)  
+#### Repository Contributing Guidelines  
 
-**General Contributing Guidelines**  
-•&emsp;[Git Workflow](#git-workflow)  
-•&emsp;[Versioning](#versioning)  
-•&emsp;[File Structure](#file-structure)  
-•&emsp;[Naming Convention](#naming-convention)  
-&emsp;•&emsp;[Branch Naming](#branch-naming)  
-&emsp;•&emsp;[Commit Messages](#commit-messages)  
-&emsp;•&emsp;[Function Naming](#function-naming)  
-&emsp;•&emsp;[Variable Naming](#variable-naming)  
-&emsp;•&emsp;[Parameter Naming](#parameter-naming)  
-&emsp;•&emsp;[Type Naming](#type-naming)  
-&emsp;•&emsp;[Macro Naming](#macro-naming)  
-&emsp;•&emsp;[File Naming](#file-naming)  
-&emsp;•&emsp;[Binary Naming](#binary-naming)  
-•&emsp;[Declaration Order](#declaration-order)  
-•&emsp;[Documentation](#documentation)  
-&emsp;•&emsp;[Header File](#header-file-h)  
-&emsp;•&emsp;[Source File](#source-file-c)  
-&emsp;•&emsp;[Doxygen Format](#doxygen-format)  
+ - [Building the window manager](#building-the-window-manager)  
+ - [Running the window manager](#running-the-window-manager)  
+
+#### Language Contributing Guidelines  
+
+ - [Writing documentation](#writing-documentation)    
+ - [Naming files and code elements](#naming-files-and-code-elements)  
+ - [Ordering code declarations](#ordering-code-declarations)  
+ - [Structuring files](#structuring-files)  
+
+#### General Contributing Guidelines  
+
+ - [Understanding the Git Workflow](#understanding-the-git-workflow)  
+ - [Determining version numbers](#determining-version-numbers)  
+
+&nbsp;
 
 ## Repository Contributing Guidelines
 
-### Building the executable
+### Building the window manager
 
-To build this project locally, you will need the following dependencies:
+Building the window manager locally is a straightforward process. To get started, you simply need to install the required dependencies and execute the `make` command.
+
+For Debian-based Linux distributions, you can install the necessary dependencies using the following command:
 
 ```bash
-# The following command is intended for Debian based systems.
 sudo apt install \
    gcc \
    make \
@@ -58,287 +51,264 @@ sudo apt install \
    libcairo2-dev
 ```
 
-Once the dependencies are installed, you can build the project by running:
+If you're not using a Debian-based Linux distribution, the package names may differ. In that case, you must consult the package repositories for your specific distribution to identify the appropriate names.
+
+After the dependencies are installed, and assuming you are in the root directory of the repository, you can build the project by running:
 
 ```bash
 make
 ```
 
-This will compile the source code and generate an executable in the `./bin`
-directory.
+This will compile the source code and generate the window manager executable in the `./bin` directory.
 
-### Running the executable
+### Running the window manager
 
-You can either run the executable directly in order to use it as your primary window manager (Using `startx` or a display manager), or you can use a nested X server like `Xephyr` in order to run the window manager within your currently active window manager.
+When running the window manager, you have three options: you can launch the window manager executable using the `startx` command, a display manager, or you can use a nested X server like Xephyr to run the window manager within your currently active window manager.
 
-> **NOTE:** Testing this window manager within a Wayland compositor may cause
-conflicts. We recommend using an X11-based window manager as your parent
-environment to prevent unexpected behavior.
+For development purposes, it is advisable to use the nested X server approach. However, be aware that running an X11 window manager within a Wayland environment may cause conflicts. To avoid unexpected behavior, it is recommended to use an X11-based window manager as your parent environment.
 
-```bash
-Xephyr -br -ac -noreset -screen 800x600 :1
-DISPLAY=:1 ./bin/lime-os-window-manager
-```
+<details>
+   <summary>&ensp;<b>Launching the window manager using startx.</b></summary>
 
-Then if you'd like, you could start an application on the new display as follows:
+   &nbsp;  
+   The `startx` command-line utility is part of the X11 toolchain, and its purpose is to initiate an X server and launch a window manager within it simultaneously.
 
-```bash
-# xterm is being used as an example here, replace it with whatever you'd like.
-DISPLAY=:1 xterm &
-```
+   This command cannot be executed from an already running graphical session. You must first switch to a TTY (non-graphical terminal) session. You can do this by pressing `Ctrl + Alt + F1` through `F6`, depending on your system configuration.
 
-## General Contributing Guidelines
+   Once in the TTY, simply run the following command:
 
-> **NOTE:** These guidelines are replicated across all LimeOS repositories. Any changes must be applied to the `CONTRIBUTING.md` files across all repositories to maintain consistency.
+   ```bash
+   startx /path/to/limeos-window-manager
+   ```
+</details>
 
-### Git Workflow
+<details>
+   <summary>&ensp;<b>Launching the window manager using a display manager.</b></summary>
 
-This repository uses two main branches:  
-&emsp;•&emsp;`main` - Stable release code, must not be pushed to directly.  
-&emsp;•&emsp;`develop` - Development code, must not be pushed to directly.  
+   &nbsp;  
+   A display manager is a graphical interface that manages user sessions and provides a login screen for authentication, after which it launches a window manager for the user’s session.
 
-In order to contribute, you must follow these steps:  
-&emsp;1\. Fork the repository.  
-&emsp;2\. Create a branch from `develop`, following the [branch naming conventions](#branch-naming):
-```bash
-git checkout develop
-git checkout -b add-spectacular-feature
-```  
-&emsp;3\. Commit your changes, following the [commit message convention](#commit-messages).  
-&emsp;4\. Push the changes to your fork.  
-&emsp;5\. Submit a pull request targeting the `develop` branch.  
+   First, you must identify the display manager being used on your system, and whether it supports launching custom window managers. The following command checks if you have a common display manager process running:
 
-The changes will be reviewed by the project maintainers and contributors, after which it will be _merged or squashed_ into the `develop` branch if approved.
+   ```bash
+   ps -e | grep -E 'sddm|gdm|kdm|mdm|xdm|lightdm|lxdm'
+   ```
 
-When sufficient changes accumulate in `develop`, the branch will be _rebased_ onto `main` by the project maintainers, at which point, a new release tag is also created.
+   If the **output is empty**, it may suggest that you are using an uncommon display manager. In this case, you can still proceed, but you will need to check whether your display manager supports launching a custom window manager yourself. If the **output is not empty**, you can consult the table below:
 
-### Versioning
+   | Process Name     | Display Manager                | Supports X11? | Supports Custom WM? |
+   |------------------|--------------------------------|---------------|---------------------|
+   | `sddm`           | Simple Desktop Display Manager | **✓**         | **✓**               |
+   | `gdm`            | GNOME Display Manager          | **✓**         | **✓**               |
+   | `kdm`            | KDE Display Manager            | **✓**         | **𐄂**               |
+   | `mdm`            | MDM Display Manager            | **✓**         | **✓**               |
+   | `xdm`            | X Display Manager              | **✓**         | **✓**               |
+   | `lightdm`        | LightDM                        | **✓**         | **✓**               |
+   | `lxdm`           | LXDM                           | **✓**         | **✓**               |
 
-This repository adheres to Semantic Versioning (Semver), which uses a three-part version number in the following format:  
-&emsp;•&emsp;`MAJOR` - Incremented for incompatible API changes.  
-&emsp;•&emsp;`MINOR` - Incremented for backwards-compatible new features.  
-&emsp;•&emsp;`PATCH` - Incremented for backwards-compatible bug fixes.  
+   Next, you must create a session file. Session files are used by display managers to identify the available window managers on the system. Create a session file in `/usr/share/xsessions/` named `limeos-window-manager.desktop` with the following contents:
 
-Examples:  
-&emsp;•&emsp;`1.0.0` - Initial stable release.  
-&emsp;•&emsp;`1.1.0` - Added new features.  
-&emsp;•&emsp;`1.1.1` - Added bug fixes.  
-&emsp;•&emsp;`2.0.0` - Introduced breaking changes.  
+   ```ini
+   [Desktop Entry]
+   Name=LimeOS Window Manager             # Display name
+   Exec=/path/to/limeos-window-manager    # Path to executable
+   Type=Application                       # Desktop entry type
+   ```
 
-A more in-depth guide on Semver can be found [here](https://semver.org/).
+   Ensure that the session file is executable. You can do this with the following command:
 
-### File Structure
+   ```bash
+   chmod +x /usr/share/xsessions/limeos-window-manager.desktop
+   ```
 
-This repository must follow these structural guidelines:
+   From now on, the login screen provided by your display manager should have an option to launch the custom window manager.
+</details>
 
-1. **Minimal Root Directory**  
-The root directory must only contain critical repository files such as build configurations, documentation, and source directory. All other files should be organized within appropriate subdirectories.
+<details>
+   <summary>&ensp;<b>Running the window manager inside of Xephyr.</b></summary>
 
-2. **Source Organization**  
-•&emsp;All code must reside within the `src` directory.  
-•&emsp;Organize code into subdirectories by module/feature.  
-•&emsp;Source files (.c) and header files (.h) must be paired and share the same name within the same directory, except for `main.c`.
+   &nbsp;  
+   Xephyr is a nested X server that allows you to run an X session within an existing X session.
 
-### Naming Convention
+   If you haven't already installed Xephyr, you can do so using your package manager. For example, on Debian-based systems, you can run:
 
-#### Branch Naming  
+   ```bash
+   sudo apt install xserver-xephyr
+   ```
 
-All Git branches in this repository must adhere to the _dash-case_ naming convention. Consider these guidelines when naming a Git branch:  
+   If you're not using a Debian-based Linux distribution, the package name may differ. In that case, you must consult the package repositories for your specific distribution to identify the appropriate name.
 
-1. **Action Prefix**  
-   All branch names (excluding `main` and `develop`) must start with one of the following action prefixes:  
-   •&emsp; `add` - Primarily adds new code, docs, files, or configurations.  
-   •&emsp; `update` - Primarily modifies code, docs, files, or configurations.  
-   •&emsp; `remove` - Primarily removes code, docs, files, or configurations.  
-   •&emsp; `fix` - Resolves bugs or issues.  
+   Open a terminal and start Xephyr with a specified display size. For example, to create a display with a `1280x800` resolution, you can use the following command:
 
-2. **Name Content**  
-   •&emsp;Keep names concise but descriptive.  
-   •&emsp;Focus on what changes do, not how they do it.  
-   •&emsp;Avoid unneccessary abbreviations.  
-   •&emsp;Write in lowercase letters.  
+   ```bash
+   Xephyr -br -ac -noreset -screen 1280x800 :1
+   ```
 
-   Examples:  
-   **✓**  `add-branch-naming-guidelines`  
-   **✓**  `update-auth-tests-code-quality`  
-   **✓**  `remove-gtk-dependency`  
-   **✓**  `fix-slow-authentication`  
+   The `-br` flag sets the background color to black, the `-ac` flag disables Access Control (simplifying development), the `-noreset` flag prevents the server from closing when all clients disconnect, and the `:1` indicates the display number, which you can choose as needed.
 
-#### Commit Messages
+   Now you can start the window manager within the Xephyr session by running:
 
-All commit messages in this repository must follow a specific format. Consider these guidelines when writing a commit message:
+   ```bash
+   DISPLAY=:1 /path/to/limeos-window-manager
+   ```
+</details>
 
-1. **Action Words**  
-   All messages must start with one of these action words:  
-   •&emsp;`Add` - When adding new code, docs, files, or configurations.  
-   •&emsp;`Update` - When modifying code, docs, files, or configurations.  
-   •&emsp;`Remove` - When removing code, docs, files, or configurations.  
-   •&emsp;`Fix` - When resolving bugs or issues.  
+&nbsp;
 
-2. **Message Content**  
-   •&emsp;Keep messages concise but descriptive.  
-   •&emsp;Focus on what changes do, not how they do it.  
-   •&emsp;Avoid unneccessary abbreviations.  
-   •&emsp;Omit the period at the end of the message.  
-   •&emsp;Write in present tense.  
+## Language Contributing Guidelines
 
-   Examples:  
-   **✓**  `Add user authentication module`  
-   **✓**  `Update memory allocation efficiency`  
-   **✓**  `Remove deprecated config parser`  
-   **✓**  `Fix memory leak during window creation`  
+**Important:** These guidelines are replicated across all LimeOS repositories that primarely use the C programming language. Any changes made here, must also be applied to the `CONTRIBUTING.md` files across similar repositories to maintain consistency.
 
-#### Function Naming
+### Writing documentation
 
-All function names in this repository must adhere to the _snake_case_ naming convention. Consider these guidelines when naming a function:
+Clear, comprehensive documentation is a cornerstone principle across all LimeOS codebases. It reduces onboarding time for new contributors, prevents bugs, and ensures the long-term sustainability of the project.
 
-1. **Descriptive Names**  
-   •&emsp;Function names must be descriptive and clearly indicate their purpose.  
-   •&emsp;Avoid unnecessary abbreviations.  
+When writing documentation, ensure that comment lines do not exceed 80 characters in length, including whitespace. This improves readability across different viewing environments. All comments should be written with proper punctuation and grammar, where sentences end with a period.
+
+The following guidelines outline how to properly document code for both header (.h) and source (.c) files.
+
+<details>
+   <summary>&ensp;<b>Writing documentation within header (.h) files.</b></summary>
+
+   &nbsp;  
+   Every declaration within the header file must be documented using the Doxygen format, which allows for automatic documentation generation and standardized presentation.
+
+   Below are some examples demonstrating the Doxygen format:
    
-   Examples:  
-   **✓**  `initialize_config()`  
-   **𐄂**  `init()`  
+   ```c
+   /**
+    * Represents a point in a 2D coordinate system.
+    */
+   typedef struct {
+      int x;
+      int y;
+   } Vector2;
 
-2. **Verb-Noun Format**  
-   Use a verb-noun structure to convey action and intent.  
-   
-   Examples:  
-   **✓**  `parse_file()`  
-   **✓**  `write_to_buffer()`  
-   **𐄂**  `file_parser()`  
+   /** 
+   * Computes the linear distance between two Vector2 points
+   * in 2D space.
+   *
+   * @param p1 The first point.
+   * @param p2 The second point.
+   *
+   * @return The calculated distance as a floating-point number.
+   */
+   float calculate_distance(int p1, int p2);
+   ```
 
-3. **Module Identification**  
-   Functions that belong to a specific module, must include the module name within their own name to indicate their association and prevent naming conflicts in the global scope.  
+   Note how the documentation block uses the Doxygen-compatible `/** */` style rather than regular comments and how each section (description, parameters, returns) is separated by a single blank line.
 
-   In the example below, it is assumed that we are declaring the function within a hypothetical `config` module.
-   
-   Examples:  
-   **✓**  `parse_config_file()`  
-   **𐄂**  `parse_file()`  
+   For functions with a limited number of discrete return values (e.g., error codes), use the dash notation (`-`) within the `@return` tag to list each possible value and its meaning:
 
-#### Variable Naming  
+   ```c
+   /**
+   * @return - `0` Indicates successful execution.
+   * @return - `-1` Indicates a general failure.
+   * @return - `-2` Indicates a specific error condition (e.g., invalid input).
+   */
+   ```
 
-All variable names in this repository must adhere to the _snake_case_ naming convention. Consider these guidelines when naming a variable:  
+   Please stick to the `@param`, `@return`, `@note`, and `@warning` tags exclusively, as these tags are guaranteed to be widely supported.
+</details>
 
-1. **Descriptive Names**  
-   •&emsp;Variable names must clearly indicate their purpose.  
-   •&emsp;Avoid single-character names, except for loop counters.  
-   •&emsp;Avoid abbreviations unless they are standard (e.g. `id` for identifier).  
+<details>
+   <summary>&ensp;<b>Writing documentation within source (.c) files.</b></summary>
 
-   Examples:  
-   **✓**  `file_descriptor`  
-   **𐄂**  `fd`  
+   &nbsp;  
+   Documentation within source files must purely focus on documenting the implementation details with inline comments that explain the logic and algorithmic steps within functions:
 
-#### Parameter Naming  
+   ```c
+   int update_item_value(Item* item, int new_value)
+   {
+      // Ensure the item pointer is not NULL.
+      if (item == NULL) {
+         return ERROR_NULL_POINTER;
+      }
 
-All parameter names in this repository must adhere to the _snake_case_ naming convention. Consider these guidelines when naming a parameter:  
+      // Validate the new value against allowed range.
+      if (new_value < MIN_VALUE || new_value > MAX_VALUE) {
+         return ERROR_VALUE_OUT_OF_RANGE;
+      }
 
-1. **Descriptive Names**  
-   •&emsp;Parameter names must clearly indicate their purpose.  
-   •&emsp;Always avoid single-character names.  
-   •&emsp;Avoid abbreviations unless they are standard (e.g. `id` for identifier).  
+      // Assign the new value to the item.
+      item->value = new_value;
 
-   Examples:  
-   **✓**  `file_descriptor`  
-   **𐄂**  `fd`  
+      return SUCCESS;
+   }
+   ```
 
-2. **Output Parameters**  
-   Prefix pointer parameters with `out_` when they are used to return values from a function.
-   
-   Examples:  
-   **✓**  `void get_name(char *out_name, int name_size)`  
-   **𐄂**  `void get_name(char *name, int name_size)`  
+   For complex source files, consider adding a multi-line comment at the top of the file, directly after the includes, that begins with "This code is responsible for" to provide critical context:
 
-#### Type Naming
+   ```c
+   #include <stdout.h>
 
-All type names in this repository must adhere to the _PascalCase_ naming convention. Consider these guidelines when naming a type:
+   /**
+   * This code is responsible for user authentication and session management.
+   * Note that sessions timestamps use local time instead of UTC, causing
+   * potential Daylight Saving Time issues.
+   */
+   ```
+</details>
 
-1. **Descriptive Names**  
-   •&emsp;Type names must clearly describe the data they represent.  
-   •&emsp;Use nouns or noun phrases for type names.  
-   
-   Examples:  
-   **✓**  `UserData`  
-   **𐄂**  `Data`  
+### Naming files and code elements
 
-2. **Module Identification**  
-   Types that belong to a specific module, must include the module name within their own name to indicate their association and prevent naming conflicts in the global scope. 
+Consistent naming conventions are crucial for maintaining code readability. Adhering to these standards ensures that code elements and files are easily identifiable and understandable.
 
-   In the example below, it is assumed that we are declaring the type within a hypothetical `window` module.
-   
-   Examples:  
-   **✓**  `WindowButtonType`  
-   **𐄂**  `ButtonType`  
+Unlike many modern programming languages, C lacks an official style guide or standard convention. Instead, different projects and organizations have developed their own sets of conventions over time. In our codebase, we've adopted naming practices that align closely with traditional C programming patterns found in established projects like the Linux kernel and GNU software.
 
-#### Macro Naming
+Below are the specific file and code element naming conventions to follow within this project:
 
-All macro names in this repository must adhere to the _snake_case_ naming convention, and be written in all uppercase letters. Consider these guidelines when naming a macro:
+#### Function Names
 
-1. **Descriptive Names**  
-   •&emsp;Macro names must clearly indicate their purpose.  
-   •&emsp;Avoid unnecessary abbreviations.  
-   •&emsp;Add unit suffixes where applicable (e.g. `_MS`, `_PERCENT`, `_BYTES`).  
-   
-   Examples:  
-   **✓**  `MAX_BUFFER_SIZE`  
-   **✓**  `NETWORK_TIMEOUT_MS`  
-   **𐄂**  `MAX_BFR_SIZE`  
-   **𐄂**  `NET_TIMEOUT`  
+ - Follow `snake_case()` convention.  
+ - Typically follow a verb-noun structure (e.g., `write_to_buffer()`).  
+ - Incorporate the name of the module they're in (e.g., `read_config()` in `config` module).
 
-2. **Module Identification**  
-   Macros that belong to a specific module, must include the module name within their own name to indicate their association and prevent naming conflicts in the global scope. 
+#### Variable Names
 
-   In the example below, it is assumed that we are declaring the macro within a hypothetical `network` module.
-   
-   Examples:  
-   **✓**  `NETWORK_RETRY_COUNT`  
-   **𐄂**  `RETRY_COUNT`  
+ - Follow `snake_case` convention.
+ - Clearly indicate the variable's contents or purpose.
+ - Avoid abbreviations, except for standard ones (e.g., `id` for identifier).
 
-#### File Naming  
+#### Parameter Names
 
-All file names in this repository must adhere to the _snake_case_ naming convention. Consider these guidelines when naming a file:  
+ - Follow `snake_case` convention.
+ - Clearly indicate the parameter's contents or purpose.
+ - Avoid abbreviations, except for standard ones (e.g., `id` for identifier).
+ - Are prefixed with `out_` if its values are to be modified by the function.
 
-1. **Concise and Contextual Names**  
-   •&emsp;File names should be concise while maintaining clarity about their purpose.  
-   •&emsp;Aim for 1-2 words per file name, letting the path provide additional context.  
-   •&emsp;Avoid abbreviations unless they are standard (e.g `auth` for authentication).
+#### Type Names
 
-   Examples:  
-   **✓**  `user/auth.c`  
-   **✓**  `user/auth/tokens.c`  
-   **𐄂**  `user/authentication_tokens.c`
+ - Follow `PascalCase` convention.
+ - Use descriptive nouns or noun phrases that represent the data structure (e.g., `UserData`).
+ - Incorporate the name of the module they're in (e.g., `ImageProperties` in `image` module).
 
-#### Binary Naming  
+#### Macro Names
 
-All binary files built in this repository must adhere to the _dash-case_ naming convention. Consider these guidelines when naming a binary file:  
+ - Follow `SNAKE_CASE` convention (all uppercase).
+ - Clearly indicate the macro's contents or purpose.
+ - Add unit suffixes where applicable for clarity (e.g., `_MS`, `_PERCENT`, `_BYTES`).
+ - Incorporate the name of the module they're in (e.g., `NETWORK_RETRY_COUNT` in `network` module).
 
-1. **LimeOS Prefix**  
-   All binary files must start with the `lime-os` prefix.
+#### File Names
 
-   Examples:  
-   **✓**  `lime-os-window-manager`    
-   **𐄂**  `lime-window-manager`
+ - Follow `snake_case` convention.
+ - Use concise names, typically 1-2 words.
+ - Avoid abbreviations unless widely understood (e.g., `auth`).
+ - Let directory structure provide context (e.g., `user/auth/tokens.c`).
 
-2. **Avoid Abbreviations**  
-   Binary file names must use complete words rather than shortened forms to maintain clarity and prevent naming conflicts.
+#### Binary Names
 
-   Examples:  
-   **✓**  `lime-os-window-manager`    
-   **𐄂**  `lime-os-wm`  
+ - Follow `dash-case` convention.
+ - Always start with the `limeos-` prefix (e.g., `limeos-window-manager`).
+ - Avoid abbreviations entirely (Excluding the suffix below).
+ - Append `-lib` suffix for libraries (e.g., `limeos-config-lib`).
 
-3. **Suffixes**  
-   When building binary files for internal libraries or LimeOS extensions, append the `lib` or `ext` suffix respectively.
+### Ordering code declarations
 
-   Examples:  
-   **✓**  `lime-os-config-lib`    
-   **✓**  `lime-os-settings-ext`    
-   **𐄂**  `lime-os-config`  
-   **𐄂**  `lime-os-settings`  
+Maintaining a consistent order of declarations within source and header files helps contributors quickly locate specific elements within a file, reducing the cognitive load associated with navigating unfamiliar code.
 
-### Declaration Order
-
-All header (.h) and source (.c) files must follow this specific declaration order:
+Code elements should be organized in the following order:
 
 1. **Includes**  
 2. **Macros**  
@@ -346,137 +316,77 @@ All header (.h) and source (.c) files must follow this specific declaration orde
 4. **Global variables**  
 5. **Functions**  
 
-### Documentation
+### Structuring files
 
-#### Header File (.h)  
-•&emsp;Every declaration within the header file must be documented.  
-•&emsp;Functions require [Doxygen Format](#doxygen-format) documentation.   
-•&emsp;Other elements require a brief inline comment (1-3 lines).  
-•&emsp;Keep comment line length under 80 characters (including whitespace).  
-•&emsp;Write clean comments with proper punctuation and end them with a period.
+A well-organized repository structure enables contributors to quickly locate and understand code components. The following structural guidelines must be followed:
 
-Example:
-```c
-// Maximum number of concurrent users.
-#define MAX_USERS 1000
+#### Minimal Root Directory
 
-// Stores user information and account metadata.
-typedef struct {
-    int id;
-    char* username;
-    time_t last_login;
-    bool logged_in;
-} UserData;
+Limit the root directory to essential files only:  
+ - Build configurations (`Makefile`)  
+ - Documentation (`README.md`, `CONTRIBUTING.md`)  
+ - Important directories (`src`, `bin`, `obj`)  
+ - License information  
 
-/** 
- * Validates user credentials.
- *
- * @param username The users username.
- * @param password The users password.
- *
- * @return - `0` The user credentials are valid.
- * @return - `-1` The user credentials are invalid.
- */
-int validate_user(const char* username, const char* password);
+#### Source Organization
+
+ - All source code must reside within the `src` directory  
+ - Organize code into logical subdirectories by module/feature  
+
+#### File Pairing  
+
+ - Source files (.c) and header files (.h) must share the same name and directory  
+ - Exception: `main.c` doesn't require a header file  
+
 ```
-#### Source File (.c)  
-•&emsp;Don't document any declarations.  
-•&emsp;Add inline comments within functions to break down complex logic into clear steps.  
-•&emsp;Keep comment line length under 80 characters (including whitespace).  
-•&emsp;Write clean comments with proper punctuation and end them with a period.  
-•&emsp;Optionally, add a multi-line comment at the top of the file, directly after the includes, starting with "This code is responsible for" to provide critical context.  
-
-Example:
-```c
-#include <stdout.h>
-
-/**
- * This code is responsible for user authentication and session management.
- * Note that sessions timestamps use local time instead of UTC, causing
- * potential Daylight Saving Time issues.
- */
-
-int process_user_login(UserData* user)
-{
-    // Verify that the user struct is valid.
-    if (!validate_user_struct(user)) {
-        return ERROR_INVALID_USER;
-    }
-
-    // Check if the user exists in database.
-    user_record_t* record = find_user_record(user->id);
-
-    // Update last login timestamp.
-    record->last_login = get_current_time();
-
-    return 0;
-}
-
-// Other functions...
+src/
+├── module/
+│   ├── feature.c
+│   └── feature.h
 ```
 
-#### Doxygen Format
+&nbsp;
 
-Function documentation should follow the Doxygen-style format - a standardized way to document function signatures, parameters, return values, and behavior. It is best to stick to only using the tags below as they are widely supported. Follow these guidelines when documenting functions:
+## General Contributing Guidelines
 
-1. **`@brief` tag**  
-   •&emsp;Keep it short, add additional information using the `@note` tag.  
-   •&emsp;Keep implementation details out - the implementation should be self-documenting.  
+**Important:** These guidelines are replicated across all LimeOS repositories. Any changes made here, must also be applied to the `CONTRIBUTING.md` files across all other repositories to maintain consistency.
 
-2. **`@param` tag**  
-   •&emsp;Document each parameter, even if seemingly obvious.  
-   •&emsp;Describe valid ranges or expected formats.  
-   •&emsp;Indicate if a parameter can be `NULL`.
+### Understanding the Git Workflow
 
-3. **`@return` tag**  
-   •&emsp;For multiple return values:  
-   &emsp;•&emsp;Use separate `@return` tags.  
-   &emsp;•&emsp;List each value with bullet points (`-`).  
-   &emsp;•&emsp;Follow the bullet point (`-`) with the return value in backticks (e.g. `` `-1` ``).  
-   &emsp;•&emsp;Follow the return value in backticks with a description.  
-   •&emsp;For single return values:  
-   &emsp;•&emsp;Use one `@return` tag with a simple description.
+This repository uses two main branches:  
 
-4. **`@note` tag**  
-   •&emsp;Place crucial information that doesn't fit in `@brief` here.  
-   •&emsp;Place any links to external documentation here.  
-   •&emsp;For multiple notes:  
-   &emsp;•&emsp;Use separate `@note` tags.  
-   &emsp;•&emsp;List each note with bullet points (`-`).  
-   &emsp;•&emsp;Follow the bullet point (`-`) with a description.  
-   •&emsp;For single notes:  
-   &emsp;•&emsp;Use one `@note` tag with a simple description.
+ - `main` - Stable release code, must not be pushed to directly.  
+ - `develop` - Development code, must not be pushed to directly.  
 
-5. **`@warning` tag**  
-   •&emsp;For multiple warnings:  
-   &emsp;•&emsp;Use separate `@warning` tags.  
-   &emsp;•&emsp;List each warning with bullet points (`-`).  
-   &emsp;•&emsp;Follow the bullet point (`-`) with a description.  
-   •&emsp;For single warnings:  
-   &emsp;•&emsp;Use one `@warning` tag with a simple description.
+In order to contribute, you must follow these steps:  
 
-6. **`@deprecated` tag**  
-   •&emsp;Mark functions that should no longer be used.  
-   •&emsp;Provide the reason for deprecation.  
-   •&emsp;Reference the recommended alternative function.
+1. Fork the repository and clone it onto your system.  
+2. Create a branch from `develop` prefixed with `feature-`:
+```bash
+git checkout develop
+git checkout -b feature-audio-support
+```  
+3. Commit your changes with an informative message.
+4. Push the changes to your fork.  
+5. Submit a pull request targeting the `develop` branch.  
 
-Example:
-```c
-/**
- * @brief Validates and processes user authentication token.
- *
- * @param token Authentication token to validate.
- * @param options Configuration options struct.
- * @param timeout_ms Timeout in milliseconds, set to 0 for default.
- *
- * @return - `0` Authentication successful.
- * @return - `-1` Invalid token format.
- * @return - `-2` Token expired.
- *
- * @note - Token validation uses SHA-256 hashing.
- * @note - Cached results expire after 24 hours.
- *
- * @warning Requires minimum OpenSSL version 1.1.0.
- */
-int authenticate_user(const char* token, auth_options_t* options, uint32_t timeout_ms);
-```
+The changes will be reviewed by the project maintainers and contributors, after which it will be _merged or squashed_ into the `develop` branch if approved.
+
+When sufficient changes accumulate in `develop`, the branch will be _rebased_ onto `main` by the project maintainers, at which point, a new release tag is also created.
+
+### Determining version numbers
+
+This repository adheres to Semantic Versioning (Semver), which uses a three-part version number in the following format:  
+
+ - `MAJOR` - Incremented for incompatible API changes.  
+ - `MINOR` - Incremented for backwards-compatible new features.  
+ - `PATCH` - Incremented for backwards-compatible bug fixes.  
+
+Examples:  
+
+ - `1.0.0` - Initial stable release.  
+ - `1.1.0` - Added new features.  
+ - `1.1.1` - Added bug fixes.  
+ - `2.0.0` - Introduced breaking changes.  
+
+A more in-depth guide on Semver can be found [here](https://semver.org/).
