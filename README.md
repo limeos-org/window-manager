@@ -1,9 +1,9 @@
 <picture>
   <!-- The media queries determine the image based on website theme -->
-  <source media="(prefers-color-scheme: dark)" srcset=".github/readme_banner_white.png">
-  <source media="(prefers-color-scheme: light)" srcset=".github/readme_banner_black.png">
-  <!-- Fallback to the black variant if no match -->
-  <img alt="LimeOS Banner" src=".github/readme_banner_black.png">
+  <source media="(prefers-color-scheme: dark)" srcset=".assets/repository_banner/dark_mode.png">
+  <source media="(prefers-color-scheme: light)" srcset=".assets/repository_banner/light_mode.png">
+  <!-- Fallback to light mode variant if no match -->
+  <img alt="LimeOS Banner" src=".assets/repository_banner/light_mode.png">
 </picture>
 
 ######
