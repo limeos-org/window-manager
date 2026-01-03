@@ -13,8 +13,9 @@ floating window management. Designed with minimalism and elegance in mind,
 it aims to provide a clean and uncluttered interface while still delivering all
 the essential functionalities that users expect from a modern window manager.
 
-> This application is still a **work in progress**. This note will be removed
-> as soon as the application is ready-for-use.
+> This application is still a **work in progress**. Some features may be
+> incomplete or subject to change while development continues. This note will
+> be removed as soon as the application is ready for everyday use.
 
 ### Philosophy
 
