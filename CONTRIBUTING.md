@@ -56,12 +56,10 @@ section listed first will take precedence.
 
 ### Building the window manager
 
-Building the window manager locally is a straightforward process. To get
-started, you simply need to install the required dependencies and execute the
-`make` command.
+This subsection explains how to build the window manager from source.
 
-For Debian-based Linux distributions, you can install the necessary dependencies
-using the following command:
+First, install the required dependencies. For Debian-based Linux distributions,
+run:
 
 ```bash
 sudo apt install \
@@ -75,21 +73,23 @@ sudo apt install \
    libcairo2-dev
 ```
 
-If you're not using a Debian-based Linux distribution, the package names may
-differ. In that case, you must consult the package repositories for your
-specific distribution to identify the appropriate names.
+If you're not using a Debian-based distribution, package names may differ.
+In that case, consult your distribution's package repositories
+(package listings) to find the correct package names for your system.
 
-After the dependencies are installed, and assuming you are in the root directory
-of the repository, you can build the project by running:
+Then, from the root directory of the repository, build the project by running:
 
 ```bash
 make
 ```
 
-This will compile the source code and generate the window manager executable in
-the `./bin` directory.
+Finally, verify the build succeeded by checking that the executable exists at
+`./bin/limeos-window-manager`.
 
 ### Running the window manager
+
+This subsection documents how to run the window manager after building it.
+Multiple launch methods exist, each suited to different use cases.
 
 When running the window manager, you have three options: you can launch the
 window manager executable using the `startx` command, a display manager, or you
