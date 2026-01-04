@@ -467,12 +467,12 @@ files and provide intent that signatures alone cannot express.
 1\. Identity template, for things that _are_ (types, macros, global variables):
 
 ```c
-/** A/The [THING] [RELATIONSHIP] [ROLE / PURPOSE]. */
+/** A / The [THING] [RELATIONSHIP] [ROLE / PURPOSE]. */
 ```
 
 Where:
 
-- `A/The` - `"A"` for instances (types), `"The"` for singletons (macros, global
+- `A / The` - `"A"` for instances (types), `"The"` for singletons (macros, global
   variables).
 - `[THING]` - What it literally is (`"type"`, `"maximum retry count"`,
   `"configuration struct"`).
