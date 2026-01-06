@@ -63,7 +63,7 @@ run:
 
 ```bash
 sudo apt install \
-   gcc \
+   clang \
    make \
    libx11-dev \
    libxi-dev \
