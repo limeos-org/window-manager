@@ -38,10 +38,10 @@
 // #include "compositor/compositor.h"
 // #include "compositor/graphics.h"
 
-// #include "shortcuts/shortcuts.h"
-// #include "shortcuts/input.h"
-// #include "shortcuts/terminal.h"
-// #include "shortcuts/exit.h"
+#include "shortcuts/shortcuts.h"
+#include "shortcuts/input.h"
+#include "shortcuts/terminal.h"
+#include "shortcuts/exit.h"
 
 #include "utils/utils.h"
 #include "utils/xlib.h"
