@@ -98,7 +98,7 @@ void draw_portal_frame(Portal *portal)
     cairo_fill(cr);
 
     // Draw title within the title bar.
-    /* draw_portal_title(portal); */ // TODO: Bring back.
+    draw_portal_title(portal);
 
     // Draw triggers within the title bar.
     draw_portal_triggers(portal);
