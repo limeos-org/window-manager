@@ -1,6 +1,6 @@
 CC = clang
 CFLAGS = -Wall -Wextra -g
-LIBS = -lX11 -lXcomposite -lXi -lXrandr -lXfixes -lcairo
+LIBS = -lX11 -lXcomposite -lXi -lXrandr -lXfixes -lcairo -lm
 
 # Build Configuration
 

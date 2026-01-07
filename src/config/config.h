@@ -82,6 +82,16 @@
         CFG_KEY_BACKGROUND_IMAGE_PATH, \
         CFG_DEFAULT_BACKGROUND_IMAGE_PATH
 
+// Configuration field constants (background_scaling).
+// Options: "zoom", "fit", "stretch", "center", "tile"
+#define CFG_TYPE_BACKGROUND_SCALING str
+#define CFG_KEY_BACKGROUND_SCALING "background_scaling"
+#define CFG_DEFAULT_BACKGROUND_SCALING "zoom"
+#define CFG_BUNDLE_BACKGROUND_SCALING \
+        CFG_TYPE_BACKGROUND_SCALING, \
+        CFG_KEY_BACKGROUND_SCALING, \
+        CFG_DEFAULT_BACKGROUND_SCALING
+
 /**
  * Retrieves a configuration value from the loaded configuration entries.
  * Intended to be used for configuration values of type `str`.

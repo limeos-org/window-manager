@@ -28,11 +28,12 @@
 #include <dlfcn.h>
 #include <signal.h>
 #include <time.h>
+#include <math.h>
 
 #include "limits.h"
 
 #include "config/config.h"
-// #include "backgrounds/backgrounds.h"
+#include "backgrounds/backgrounds.h"
 // #include "markers/markers.h"
 
 // #include "compositor/compositor.h"
