@@ -58,8 +58,8 @@
 #include "portals/input.h"
 #include "portals/focus.h"
 #include "portals/triggers.h"
-// #include "portals/dragging.h"
-// #include "portals/resizing.h"
+#include "portals/dragging.h"
+#include "portals/resizing.h"
 // #include "portals/title.h"
 
 #include "events/events.h"
