@@ -36,6 +36,16 @@ int main()
         exit(EXIT_FAILURE);
     }
 
+    // Warn if the parent environment is running Wayland.
+    const char *wayland_display = getenv("WAYLAND_DISPLAY");
+    const char *session_type = getenv("XDG_SESSION_TYPE");
+    if (wayland_display != NULL ||
+        (session_type != NULL && strcmp(session_type, "wayland") == 0))
+    {
+        LOG_WARNING("Parent environment is using Wayland. "
+                    "Running under XWayland may have limitations.");
+    }
+
     // Ensure that the required libraries are available.
     const int library_count = sizeof(libraries) / sizeof(libraries[0]);
     for(int i = 0; i < library_count; i++)
