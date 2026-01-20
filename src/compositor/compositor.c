@@ -77,16 +77,6 @@ static void compositor_init()
     compositor_enabled = true;
 }
 
-static bool is_window_viewable(Display *display, Window window)
-{
-    XWindowAttributes attrs;
-    if (XGetWindowAttributes(display, window, &attrs) == 0)
-    {
-        return false;
-    }
-    return attrs.map_state == IsViewable;
-}
-
 static void draw_portal(Portal *portal)
 {
     if (!compositor_enabled) return;
@@ -95,21 +85,28 @@ static void draw_portal(Portal *portal)
     if (portal->initialized == false) return;
 
     Display *display = DefaultDisplay;
+    bool has_frame = is_portal_frame_valid(portal);
+    Visual *visual = portal->visual;
 
     // Get the window to composite (frame if it exists, otherwise client).
-    Window target_window = is_portal_frame_valid(portal) ?
+    Window target_window = has_frame ?
         portal->frame_window : portal->client_window;
 
     // Grab the server to prevent window destruction during pixmap operations.
-    // This ensures atomicity between checking window validity and using its 
-    // pixmap.
     XGrabServer(display);
 
-    // Check if the window is viewable before trying to get its pixmap.
-    if (!is_window_viewable(display, target_window))
+    // Verify override-redirect windows are viewable before getting their pixmap.
+    // These windows are controlled by clients and can change state rapidly.
+    // Framed portals are controlled by us, so we trust portal->mapped.
+    if (portal->override_redirect)
     {
-        XUngrabServer(display);
-        return;
+        XWindowAttributes attrs;
+        if (!XGetWindowAttributes(display, target_window, &attrs) ||
+            attrs.map_state != IsViewable)
+        {
+            XUngrabServer(display);
+            return;
+        }
     }
 
     // Get the window pixmap.
@@ -120,26 +117,17 @@ static void draw_portal(Portal *portal)
         return;
     }
 
-    // Get the actual window attributes for the correct visual and dimensions.
-    XWindowAttributes window_attrs;
-    if (XGetWindowAttributes(display, target_window, &window_attrs) == 0)
-    {
-        XFreePixmap(display, pixmap);
-        XUngrabServer(display);
-        return;
-    }
+    // Release the server grab now that we have the pixmap.
+    XUngrabServer(display);
 
-    // Create a Cairo surface from the pixmap using the window's visual.
+    // Create a Cairo surface from the pixmap using cached dimensions.
     cairo_surface_t *window_surface = cairo_xlib_surface_create(
         display,
         pixmap,
-        window_attrs.visual,
-        window_attrs.width,
-        window_attrs.height
+        visual,
+        portal->width,
+        portal->height
     );
-
-    // Release the server grab - we have all the data we need.
-    XUngrabServer(display);
 
     // Check if the surface was created successfully.
     if (cairo_surface_status(window_surface) != CAIRO_STATUS_SUCCESS)
@@ -152,6 +140,9 @@ static void draw_portal(Portal *portal)
     // Draw the window surface to the off-screen buffer.
     cairo_set_source_surface(buffer_cr, window_surface, portal->x_root, portal->y_root);
     cairo_paint(buffer_cr);
+
+    // Clear the source to release Cairo's reference to window_surface.
+    cairo_set_source_rgb(buffer_cr, 0, 0, 0);
 
     // Cleanup.
     cairo_surface_destroy(window_surface);

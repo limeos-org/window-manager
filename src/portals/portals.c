@@ -162,9 +162,40 @@ void initialize_portal(Portal *portal)
         portal->client_window_type = x_get_window_type(display, portal->client_window);
     }
 
+    // Get the client window's geometry and visual BEFORE creating the frame.
+    // This must be done while the client is still a child of root,
+    // otherwise the coordinates will be wrong after reparenting.
+    Window root_window = DefaultRootWindow(display);
+    int client_x_root = 0, client_y_root = 0;
+    unsigned int client_width = 1, client_height = 1;
+    XTranslateCoordinates(
+        display,        // Display
+        client_window,  // Source window
+        root_window,    // Reference window
+        0, 0,           // Source window origin coordinates
+        &client_x_root, // Translated X coordinate
+        &client_y_root, // Translated Y coordinate
+        &(Window){0}    // Child window (Unused)
+    );
+    XWindowAttributes client_attrs;
+    if (XGetWindowAttributes(display, client_window, &client_attrs))
+    {
+        client_width = client_attrs.width;
+        client_height = client_attrs.height;
+        portal->visual = client_attrs.visual;
+        portal->override_redirect = client_attrs.override_redirect;
+    }
+
     // Create a frame for the portal, if necessary.
     if (should_portal_be_framed(portal))
     {
+        // Set the portal geometry before creating the frame, so the frame
+        // is created with the correct position and dimensions.
+        portal->x_root = client_x_root;
+        portal->y_root = client_y_root;
+        portal->width = client_width;
+        portal->height = client_height + PORTAL_TITLE_BAR_HEIGHT;
+
         create_portal_frame(portal);
     }
 
@@ -246,6 +277,9 @@ void move_portal(Portal *portal, int x_root, int y_root)
         // Determine which window to move.
         Window target_window = (is_portal_frame_valid(portal)) ? frame_window : client_window;
 
+        // Check if the target window still exists (may have been destroyed).
+        if (!x_window_exists(display, target_window)) return;
+
         // The `XMoveWindow()` function expects coordinates relative to the
         // parent window. So we have to translate the provided root coordinates
         // to parent coordinates.
@@ -254,10 +288,7 @@ void move_portal(Portal *portal, int x_root, int y_root)
         Window parent_window = x_get_window_parent(display, target_window);
         if (parent_window == None)
         {
-            LOG_ERROR(
-                "Could not move portal (%p), parent window not found.",
-                (void*)portal
-            );
+            // Window was likely destroyed between the exists check and now.
             return;
         }
 
@@ -353,6 +384,9 @@ void resize_portal(Portal *portal, unsigned int width, unsigned int height)
     // Ensure the portal has been initialized.
     if (portal->initialized == false) return;
 
+    // Check if the client window still exists (may have been destroyed).
+    if (!is_portal_client_valid(portal)) return;
+
     // Resize the portal itself.
     portal->width = width;
     portal->height = height;
@@ -374,9 +408,9 @@ void resize_portal(Portal *portal, unsigned int width, unsigned int height)
             XResizeWindow(display, client_window, width, height);
         }
 
-        // According to the ICCCM (Sections 4.1.5 and 4.2.3), when a window 
-        // manager resizes a reparented client window, it is responsible for 
-        // sending a synthetic ConfigureNotify event to the client with the 
+        // According to the ICCCM (Sections 4.1.5 and 4.2.3), when a window
+        // manager resizes a reparented client window, it is responsible for
+        // sending a synthetic ConfigureNotify event to the client with the
         // windows new dimensions and position relative to root.
 
         if (is_portal_frame_valid(portal))
@@ -394,10 +428,7 @@ void resize_portal(Portal *portal, unsigned int width, unsigned int height)
             );
             if (client_x_root == -1 || client_y_root == -1)
             {
-                LOG_ERROR(
-                    "Could not resize portal (%p), coordinate translation failed.",
-                    (void*)portal
-                );
+                // Window was likely destroyed during the operation.
                 return;
             }
 
@@ -437,6 +468,9 @@ void synchronize_portal(Portal *portal)
     // Ensure the portal has been initialized.
     if (portal->initialized == false) return;
 
+    // Check if the client window still exists (may have been destroyed).
+    if (!is_portal_client_valid(portal)) return;
+
     // Retrieve the client window root coordinates.
     int client_x_root = 0, client_y_root = 0;
     XTranslateCoordinates(
@@ -470,8 +504,9 @@ void synchronize_portal(Portal *portal)
     unsigned int portal_width = max(1, client_width);
     unsigned int portal_height = max(1, client_height + (is_framed ? PORTAL_TITLE_BAR_HEIGHT : 0));
 
-    // Move the portal, only if the position has changed.
-    if (portal_x_root != portal->x_root || portal_y_root != portal->y_root)
+    // Move the portal if the position has changed and the portal is not framed.
+    // Framed portals have their position controlled by the WM, not the client.
+    if (!is_framed && (portal_x_root != portal->x_root || portal_y_root != portal->y_root))
     {
         move_portal(portal, portal_x_root, portal_y_root);
     }
@@ -538,38 +573,82 @@ void map_portal(Portal *portal)
         initialize_portal(portal);
     }
 
-    // Map the frame window, if it exists.
-    if (is_portal_frame_valid(portal))
+    // Map non-override-redirect portals. Override-redirect clients manage                                                                                                  
+    // themselves, but we still mark them as mapped later.
+    if (!portal->override_redirect)
     {
-        XMapWindow(display, portal->frame_window);
+        // Map the frame window, if it exists.
+        if (is_portal_frame_valid(portal))
+        {
+            XMapWindow(display, portal->frame_window);
+        }
+
+        // Map the client window, if it exists.
+        if (is_portal_client_valid(portal))
+        {
+            XMapWindow(display, portal->client_window);
+
+            // Set WM_STATE property as required by ICCCM.
+            // This tells the client it's being managed and in what state.
+            Atom WM_STATE = XInternAtom(display, "WM_STATE", False);
+            unsigned long state_data[2] = {
+                1,      // NormalState
+                None    // Icon window (none)
+            };
+            XChangeProperty(
+                display,
+                portal->client_window,
+                WM_STATE,
+                WM_STATE,
+                32,
+                PropModeReplace,
+                (unsigned char *)state_data,
+                2
+            );
+        }
     }
 
-    // Map the client window, if it exists.
-    if (is_portal_client_valid(portal))
-    {
-        XMapWindow(display, portal->client_window);
-
-        // Set WM_STATE property as required by ICCCM.
-        // This tells the client it's being managed and in what state.
-        Atom WM_STATE = XInternAtom(display, "WM_STATE", False);
-        unsigned long state_data[2] = {
-            1,      // NormalState
-            None    // Icon window (none)
-        };
-        XChangeProperty(
-            display,
-            portal->client_window,
-            WM_STATE,
-            WM_STATE,
-            32,
-            PropModeReplace,
-            (unsigned char *)state_data,
-            2
-        );
-    }
-
-    // Set the portal as mapped.
+    // Mark the portal as mapped.
     portal->mapped = true;
+
+    // Apply WM_NORMAL_HINTS position if specified by the client, or center
+    // the portal if position is (0,0) or not specified. Override-redirect
+    // windows position themselves, so skip them.
+    if (!portal->override_redirect)
+    {
+        bool should_center = true;
+        XSizeHints hints;
+        if (XGetWMNormalHints(display, portal->client_window, &hints, &(long){0}))
+        {
+            // Check if position hints represent an intentional placement.
+            // Positions at or near origin (0,0 or 1,1) are often toolkit defaults.
+            bool is_default_position = (hints.x <= 1 && hints.y <= 1);
+            bool has_real_position = (hints.flags & (USPosition | PPosition)) && !is_default_position;
+
+            if (has_real_position)
+            {
+                int portal_x = hints.x;
+                int portal_y = hints.y;
+                if (is_portal_frame_valid(portal))
+                {
+                    portal_y -= PORTAL_TITLE_BAR_HEIGHT;
+                }
+
+                move_portal(portal, portal_x, portal_y);
+                should_center = false;
+            }
+        }
+
+        if (should_center)
+        {
+            int screen = DefaultScreen(display);
+            int screen_width = DisplayWidth(display, screen);
+            int screen_height = DisplayHeight(display, screen);
+            int center_x = (screen_width - (int)portal->width) / 2;
+            int center_y = (screen_height - (int)portal->height) / 2;
+            move_portal(portal, center_x, center_y);
+        }
+    }
 
     // Synchronize the portal geometry.
     synchronize_portal(portal);
@@ -595,19 +674,24 @@ void unmap_portal(Portal *portal)
 {
     Display *display = DefaultDisplay;
 
-    // Unmap the frame window, if it exists.
-    if (is_portal_frame_valid(portal))
+    // Unmap non-override-redirect portals. Override-redirect clients manage                                                                                                  
+    // themselves, but we still mark them as unmapped later.
+    if (!portal->override_redirect)
     {
-        XUnmapWindow(display, portal->frame_window);
+        // Unmap the frame window, if it exists.
+        if (is_portal_frame_valid(portal))
+        {
+            XUnmapWindow(display, portal->frame_window);
+        }
+
+        // Unmap the client window, if it exists.
+        if (is_portal_client_valid(portal))
+        {
+            XUnmapWindow(display, portal->client_window);
+        }
     }
 
-    // Unmap the client window, if it exists.
-    if (is_portal_client_valid(portal))
-    {
-        XUnmapWindow(display, portal->client_window);
-    }
-
-    // Set the portal as unmapped.
+    // Mark the portal as unmapped.
     portal->mapped = false;
 
     // Call all event handlers of the PortalUnmapped event.

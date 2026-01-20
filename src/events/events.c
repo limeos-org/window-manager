@@ -60,9 +60,15 @@ void initialize_event_loop()
         FD_SET(ConnectionNumber(display), &in_fds);
         select(ConnectionNumber(display) + 1, &in_fds, NULL, NULL, &timeout);
 
-        // Handle all pending X events.
-        while (XPending(display) > 0)
+        // Process pending X events in batches. Without a limit, a flood of
+        // events (e.g., rapid mouse movement) could starve the Update event,
+        // preventing compositor redraws and freezing the UI.
+        int events_processed = 0;
+        const int max_events_per_iteration = 50;
+        while (XPending(display) > 0 && events_processed < max_events_per_iteration)
         {
+            events_processed++;
+
             // Retrieve the next X event.
             XEvent x_event;
             XNextEvent(display, &x_event);
@@ -100,8 +106,11 @@ void initialize_event_loop()
             call_event_handlers(event);
         }
 
+        // Get fresh time after processing events for accurate Update timing.
+        Time update_check_time = x_get_current_time();
+
         // Check if sufficient time has passed since the last update.
-        if (current_time - last_update_time > throttle_ms)
+        if (update_check_time - last_update_time > throttle_ms)
         {
             // Call all event handlers of the Update event.
             call_event_handlers((Event*)&(UpdateEvent){
@@ -109,7 +118,7 @@ void initialize_event_loop()
             });
 
             // Update the last update time.
-            last_update_time = current_time;
+            last_update_time = update_check_time;
         }
 
         // Update the last iteration time.

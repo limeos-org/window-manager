@@ -21,21 +21,12 @@ HANDLE(RawButtonPress)
         &(unsigned int){0}  // Mask (Unused)
     );
 
-    // If the click is on an override-redirect window (popup/dropdown/menu),
-    // don't interfere - let the application handle it directly.
-    if (child_window != None)
-    {
-        XWindowAttributes attrs;
-        if (XGetWindowAttributes(display, child_window, &attrs) &&
-            attrs.override_redirect == True)
-        {
-            return;
-        }
-    }
-
     // Find the portal that owns the window under the cursor.
     Portal *clicked_portal = find_portal_by_window(child_window);
     if (clicked_portal == NULL) return;
+
+    // Skip override-redirect portals (popups, dropdowns, menus).
+    if (clicked_portal->override_redirect) return;
 
     // Calculate the position of the pointer relative to the portal.
     int pointer_x_portal = pointer_x_root - clicked_portal->x_root;
@@ -117,6 +108,9 @@ HANDLE(RawMotionNotify)
     // Find the portal that owns the window under the cursor.
     Portal *portal = find_portal_by_window(child_window);
     if (portal == NULL) return;
+
+    // Skip override-redirect portals (popups, dropdowns, menus).
+    if (portal->override_redirect) return;
 
     // Calculate the position of the pointer relative to the portal.
     int pointer_x_portal = pointer_x_root - portal->x_root;

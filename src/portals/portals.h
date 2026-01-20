@@ -21,12 +21,14 @@ typedef struct {
     bool initialized;
     bool top_level;
     bool mapped;
+    bool override_redirect;
     int x_root, y_root;
     unsigned int width, height;
     Window frame_window;
     cairo_t *frame_cr;
     Window client_window;
     Atom client_window_type;
+    Visual *visual;
 } Portal;
 
 /**

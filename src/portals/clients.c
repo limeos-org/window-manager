@@ -172,10 +172,21 @@ HANDLE(ConfigureRequest)
 HANDLE(ConfigureNotify)
 {
     XConfigureEvent *_event = &event->xconfigure;
+    Display *display = DefaultDisplay;
 
     // Ensure the event came from a portal client window.
     Portal *portal = find_portal_by_window(_event->window);
     if (portal == NULL || _event->window != portal->client_window) return;
+
+    // Enforce client position within the frame for framed portals.
+    // Some clients try to move themselves even after being reparented.
+    if (is_portal_frame_valid(portal))
+    {
+        if (_event->x != 0 || _event->y != PORTAL_TITLE_BAR_HEIGHT)
+        {
+            XMoveWindow(display, portal->client_window, 0, PORTAL_TITLE_BAR_HEIGHT);
+        }
+    }
 
     // Synchronize the portal geometry.
     synchronize_portal(portal);

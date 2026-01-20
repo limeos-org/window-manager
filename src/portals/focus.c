@@ -16,11 +16,15 @@ HANDLE(PortalButtonPress)
     // unnecessary code execution.
     if (last_focused_portal == portal) return;
 
+    // Ensure the portal is mapped before trying to focus it.
+    // XSetInputFocus returns BadMatch if the window is not viewable.
+    if (!portal->mapped) return;
+
     // Set input focus on the portal client window.
     XSetInputFocus(
         DefaultDisplay,         // Display
         portal->client_window,  // Window
-        RevertToParent,         // Revert To
+        RevertToPointerRoot,    // Revert To
         CurrentTime             // Time
     );
 

@@ -25,7 +25,8 @@ bool should_portal_be_framed(Portal *portal);
  *
  * @param portal The portal to create the frame for.
  *
- * @note The portal's `frame_window` and `frame_cr` fields will be populated.
+ * @note The portal's `frame_window`, `frame_cr`, `visual` fields will be 
+ * populated.
  */
 void create_portal_frame(Portal *portal);
 

@@ -38,13 +38,30 @@ static void update_resizing_portal(int mouse_root_x, int mouse_root_y, Time even
     // Throttle the resizing to prevent excessive updates.
     if (event_time - last_resize_time < (Time)throttle_ms) return;
 
+    // Determine minimum dimensions from client hints or use defaults.
+    int min_width = MINIMUM_PORTAL_WIDTH;
+    int min_height = MINIMUM_PORTAL_HEIGHT;
+    XSizeHints hints;
+    if (XGetWMNormalHints(DefaultDisplay, resized_portal->client_window, &hints, &(long){0}))
+    {
+        if (hints.flags & PMinSize)
+        {
+            min_width = max(MINIMUM_PORTAL_WIDTH, hints.min_width);
+            min_height = max(MINIMUM_PORTAL_HEIGHT, hints.min_height);
+            if (is_portal_frame_valid(resized_portal))
+            {
+                min_height += PORTAL_TITLE_BAR_HEIGHT;
+            }
+        }
+    }
+
     // Calculate new portal width and height.
     int new_portal_width = max(
-        MINIMUM_PORTAL_WIDTH,
+        min_width,
         portal_start_width + (mouse_root_x - mouse_start_root_x)
     );
     int new_portal_height = max(
-        MINIMUM_PORTAL_HEIGHT,
+        min_height,
         portal_start_height + (mouse_root_y - mouse_start_root_y)
     );
 

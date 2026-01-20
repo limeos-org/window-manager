@@ -64,6 +64,7 @@ void create_portal_frame(Portal *portal)
     // Assign the frame window and Cairo context to the portal.
     portal->frame_window = frame_window;
     portal->frame_cr = cr;
+    portal->visual = visual;
 
     // Add the client window to our save-set so it survives if the WM exits.
     XAddToSaveSet(display, portal->client_window);
