@@ -124,6 +124,11 @@ int x_key_name_to_symbol(const char *name, int *out_key)
 {
     // Create a copy of the provided key name string.
     char *name_copy = strdup(name);
+    if (name_copy == NULL)
+    {
+        *out_key = NoSymbol;
+        return -1;
+    }
 
     // Make the key name string lowercase.
     for (int i = 0; i < (int)strlen(name_copy); i++)
@@ -174,7 +179,7 @@ int x_key_name_to_symbol(const char *name, int *out_key)
     // Free the duplicate string.
     free(name_copy);
 
-    return (out_key != NoSymbol) ? 0 : -1;
+    return (*out_key != NoSymbol) ? 0 : -1;
 }
 
 int x_key_names_to_symbols(char *names, const char delimiter, int *out_keys, int keys_size)
@@ -183,6 +188,14 @@ int x_key_names_to_symbols(char *names, const char delimiter, int *out_keys, int
 
     // Create a copy of the provided key names string.
     char *names_copy = strdup(names);
+    if (names_copy == NULL)
+    {
+        for (int i = 0; i < keys_size; i++)
+        {
+            out_keys[i] = NoSymbol;
+        }
+        return -1;
+    }
 
     // Make the key names string lowercase.
     for (int i = 0; i < (int)strlen(names_copy); i++)

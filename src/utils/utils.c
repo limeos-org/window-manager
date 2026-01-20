@@ -42,6 +42,17 @@ char** split_string(const char* string, const char* delimiter, int* out_count)
     while (token != NULL)
     {
         tokens[index] = strdup(token);
+        if (tokens[index] == NULL)
+        {
+            // Free all previously allocated tokens on failure.
+            for (int i = 0; i < index; i++)
+            {
+                free(tokens[i]);
+            }
+            free(tokens);
+            free(string_copy);
+            return NULL;
+        }
         token = strtok(NULL, delimiter);
         index++;
     }

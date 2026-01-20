@@ -78,8 +78,15 @@ void add_marker(unsigned int id, unsigned int shape, bool grab)
     // Increase the capacity of the marker deck if necessary.
     if (marker_deck.size >= marker_deck.capacity)
     {
-        marker_deck.capacity *= 2;
-        marker_deck.items = realloc(marker_deck.items, marker_deck.capacity * sizeof(Marker));
+        int new_capacity = marker_deck.capacity * 2;
+        Marker *new_items = realloc(marker_deck.items, new_capacity * sizeof(Marker));
+        if (new_items == NULL)
+        {
+            LOG_ERROR("Could not add marker, memory allocation failed.");
+            return;
+        }
+        marker_deck.capacity = new_capacity;
+        marker_deck.items = new_items;
     }
 
     // Add the marker to the deck.
@@ -123,6 +130,11 @@ HANDLE(Initialize)
     marker_deck.size = 0;
     marker_deck.capacity = 10;
     marker_deck.items = malloc(marker_deck.capacity * sizeof(Marker));
+    if (marker_deck.items == NULL)
+    {
+        LOG_ERROR("Could not initialize marker deck, memory allocation failed.");
+        return;
+    }
 
     // Add the default marker.
     add_marker(string_to_id("default"), XC_left_ptr, false);

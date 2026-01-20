@@ -32,7 +32,6 @@ Portal *create_portal(Window client_window)
         Portal *new_unsorted = realloc(registry.unsorted, registry.capacity * sizeof(Portal));
         if (new_unsorted == NULL) {
             LOG_ERROR("Could not register portal, memory allocation failed.");
-            free(new_unsorted);
             registry.count--;
             return NULL;
         }
@@ -42,16 +41,24 @@ Portal *create_portal(Window client_window)
         Portal **new_sorted = realloc(registry.sorted, registry.capacity * sizeof(Portal *));
         if (new_sorted == NULL) {
             LOG_ERROR("Could not register portal, memory allocation failed.");
-            free(new_sorted);
             registry.count--;
             return NULL;
         }
         registry.sorted = new_sorted;
     }
 
+    // Allocate memory for the portal title.
+    char *title = strdup("Untitled");
+    if (title == NULL)
+    {
+        LOG_ERROR("Could not register portal, memory allocation failed.");
+        registry.count--;
+        return NULL;
+    }
+
     // Add the portal to the registry.
     registry.unsorted[registry.count - 1] = (Portal){
-        .title = strdup("Untitled"),
+        .title = title,
         .client_window_type = None,
         .initialized = false,
         .mapped = false,
@@ -150,8 +157,12 @@ void initialize_portal(Portal *portal)
     x_get_window_name(display, client_window, portal_title, sizeof(portal_title));
 
     // Set the portal title.
-    free(portal->title);
-    portal->title = strdup(portal_title);
+    char *new_title = strdup(portal_title);
+    if (new_title != NULL)
+    {
+        free(portal->title);
+        portal->title = new_title;
+    }
 
     // Determine whether the portal is top-level.
     portal->top_level = x_window_is_top_level(display, portal->client_window);

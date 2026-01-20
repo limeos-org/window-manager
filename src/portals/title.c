@@ -2,8 +2,12 @@
 
 static void set_portal_title(Portal *portal, const char *title)
 {
-    free(portal->title);
-    portal->title = strdup(title);
+    char *new_title = strdup(title);
+    if (new_title != NULL)
+    {
+        free(portal->title);
+        portal->title = new_title;
+    }
 }
 
 void draw_portal_title(Portal *portal)

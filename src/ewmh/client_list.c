@@ -24,7 +24,6 @@ static void update_ewmh_client_list()
     if (client_list == NULL)
     {
         LOG_ERROR("Could not update EWMH client list, memory allocation failed.");
-        free(client_list);
         return;
     }
 
@@ -56,6 +55,9 @@ static void update_ewmh_client_list()
         cast_client_list,   // Data
         clients_added       // Element Count
     );
+
+    // Free the client list.
+    free(client_list);
 }
 
 HANDLE(PortalMapped)
