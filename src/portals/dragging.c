@@ -73,6 +73,9 @@ HANDLE(PortalButtonPress)
     // Ensure we're clicking on the frame area (title bar).
     if (is_portal_frame_area(portal, _event->x_portal, _event->y_portal) == false) return;
 
+    // Don't start dragging if clicking on a trigger (close button, etc.).
+    if (is_portal_triggers_area(portal, _event->x_portal, _event->y_portal)) return;
+
     start_dragging_portal(portal, _event->x_root, _event->y_root);
 }
 
@@ -140,5 +143,16 @@ HANDLE(RawMotionNotify)
     else
     {
         remove_marker(string_to_id("hover_frame"));
+    }
+}
+
+HANDLE(PortalDestroyed)
+{
+    PortalDestroyedEvent *_event = &event->portal_destroyed;
+
+    // If the destroyed portal was being dragged, stop dragging.
+    if (is_dragging && _event->portal == dragged_portal)
+    {
+        stop_dragging_portal();
     }
 }

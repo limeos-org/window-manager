@@ -87,6 +87,19 @@ void draw_portal_triggers(Portal *portal)
     // draw_portal_trigger(portal, TRIGGER_ARRANGE);
 }
 
+bool is_portal_triggers_area(Portal *portal, int rel_x, int rel_y)
+{
+    if (is_portal_trigger_area(portal, TRIGGER_CLOSE, rel_x, rel_y))
+    {
+        return true;
+    }
+    // if (is_portal_trigger_area(portal, TRIGGER_ARRANGE, rel_x, rel_y))
+    // {
+    //     return true;
+    // }
+    return false;
+}
+
 HANDLE(PortalButtonPress)
 {
     PortalButtonPressEvent *_event = &event->portal_button_press;

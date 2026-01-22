@@ -9,7 +9,7 @@
  * https://specifications.freedesktop.org/wm-spec/1.5/ar01s03.html#id-1.4.4
  */
 
-static void update_ewmh_client_list()
+static void update_ewmh_client_list(Portal *exclude)
 {
     Display *display = DefaultDisplay;
     Window root_window = DefaultRootWindow(display);
@@ -35,6 +35,7 @@ static void update_ewmh_client_list()
         Portal *portal = &portals[i];
 
         if (portal == NULL) continue;
+        if (portal == exclude) continue;
         if (portal->initialized == false) continue;
         if (portal->top_level == false) continue;
 
@@ -62,10 +63,11 @@ static void update_ewmh_client_list()
 
 HANDLE(PortalMapped)
 {
-    update_ewmh_client_list();
+    update_ewmh_client_list(NULL);
 }
 
 HANDLE(PortalDestroyed)
 {
-    update_ewmh_client_list();
+    PortalDestroyedEvent *_event = &event->portal_destroyed;
+    update_ewmh_client_list(_event->portal);
 }

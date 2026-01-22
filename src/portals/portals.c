@@ -89,9 +89,6 @@ Portal *create_portal(Window client_window)
 
 void destroy_portal(Portal *portal)
 {
-    Window client_window = portal->client_window;
-    Window frame_window = portal->frame_window;
-
     // Destroy the client window.
     if (is_portal_client_valid(portal))
     {
@@ -105,6 +102,13 @@ void destroy_portal(Portal *portal)
         destroy_portal_frame(portal);
         if (is_portal_frame_valid(portal)) return;
     }
+
+    // Call all event handlers of the PortalDestroyed event.
+    // This is done before unregistering so handlers can access the portal.
+    call_event_handlers((Event*)&(PortalDestroyedEvent){
+        .type = PortalDestroyed,
+        .portal = portal
+    });
 
     // Unregister the portal.
     scope {
@@ -134,13 +138,6 @@ void destroy_portal(Portal *portal)
 
     // Re-sort the portals.
     sort_portals();
-
-    // Call all event handlers of the PortalDestroyed event.
-    call_event_handlers((Event*)&(PortalDestroyedEvent){
-        .type = PortalDestroyed,
-        .client_window = client_window,
-        .frame_window = frame_window
-    });
 }
 
 void initialize_portal(Portal *portal)

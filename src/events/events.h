@@ -40,16 +40,15 @@ typedef struct {
 } PortalCreatedEvent;
 
 /**
- * An event that gets triggered whenever a portal is destroyed.
- * 
- * Both the client and frame windows are destroyed at this point, but their 
- * ID's may still be used to perform any necessary cleanup.
+ * An event that gets triggered whenever a portal is being destroyed.
+ *
+ * The portal pointer is valid during handler execution. After all handlers
+ * return, the portal will be unregistered and the pointer becomes invalid.
  */
 #define PortalDestroyed 132
 typedef struct {
     int type;
-    Window client_window;
-    Window frame_window;
+    Portal *portal;
 } PortalDestroyedEvent;
 
 /**

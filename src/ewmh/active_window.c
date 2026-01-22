@@ -47,9 +47,8 @@ HANDLE(PortalFocused)
 HANDLE(PortalDestroyed)
 {
     PortalDestroyedEvent *_event = &event->portal_destroyed;
-    Window client_window = _event->client_window;
 
-    if (current_active_window == client_window)
+    if (current_active_window == _event->portal->client_window)
     {
         set_ewmh_active_window(0);
     }
