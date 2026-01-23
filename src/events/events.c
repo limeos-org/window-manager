@@ -1,7 +1,7 @@
 #include "../all.h"
 
-static Time last_iteration_time = 0;
 static Time last_update_time = 0;
+static Time last_select_time = 0;
 static Time throttle_ms = 0;
 
 static const long x_root_event_mask =
@@ -45,13 +45,15 @@ void initialize_event_loop()
 
     while (true)
     {
-        // Calculate the blocking timeout.
+        // Calculate timeout to enforce minimum spacing between iterations.
         Time current_time = x_get_current_time();
-        Time elapsed_time = current_time - last_iteration_time;
-        Time remaining_time = throttle_ms - elapsed_time;
+        Time since_last_select = current_time - last_select_time;
+        Time remaining_time = (since_last_select < throttle_ms)
+            ? (throttle_ms - since_last_select)
+            : 0;
         struct timeval timeout = {
             .tv_sec = 0,
-            .tv_usec = max(0, remaining_time * 1000)
+            .tv_usec = remaining_time * 1000
         };
 
         // Block until an X event or D-Bus message is received, or timeout.
@@ -67,6 +69,9 @@ void initialize_event_loop()
             if (dbus_fd > highest_fd) highest_fd = dbus_fd;
         }
         select(highest_fd + 1, &read_fd_set, NULL, NULL, &timeout);
+
+        // Record when we woke up to enforce spacing on next iteration.
+        last_select_time = x_get_current_time();
 
         // Dispatch D-Bus messages if available.
         if (dbus_fd >= 0 && FD_ISSET(dbus_fd, &read_fd_set))
@@ -124,7 +129,7 @@ void initialize_event_loop()
         Time update_check_time = x_get_current_time();
 
         // Check if sufficient time has passed since the last update.
-        if (update_check_time - last_update_time > throttle_ms)
+        if (update_check_time - last_update_time >= throttle_ms)
         {
             // Call all event handlers of the Update event.
             call_event_handlers((Event*)&(UpdateEvent){
@@ -134,9 +139,6 @@ void initialize_event_loop()
             // Update the last update time.
             last_update_time = update_check_time;
         }
-
-        // Update the last iteration time.
-        last_iteration_time = current_time;
     }
 }
 
