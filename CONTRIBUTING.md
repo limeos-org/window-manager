@@ -84,12 +84,8 @@ building, and installing each of the following repositories:
 
 - `limeos-common-lib`
 
-For each repository, run:
-
-```bash
-make
-sudo make install
-```
+For each repository, follow the building and installation instructions within
+its `CONTRIBUTING.md` file.
 
 Then, from the root directory of this repository, build the project by running:
 
