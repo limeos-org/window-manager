@@ -487,7 +487,6 @@ Atom x_get_window_type(Display *display, Window window)
     int actual_format;
     unsigned long nitems, bytes_after;
     unsigned char *data = NULL;
-
     int status = XGetWindowProperty(
         display,
         window,
@@ -501,7 +500,6 @@ Atom x_get_window_type(Display *display, Window window)
         &bytes_after,
         &data
     );
-
     if (status != Success || data == NULL || nitems == 0)
     {
         if (data != NULL) XFree(data);
