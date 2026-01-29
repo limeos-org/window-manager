@@ -414,7 +414,12 @@ void resize_portal(Portal *portal, unsigned int width, unsigned int height)
         {
             // Resize both the frame and client windows.
             XResizeWindow(display, frame_window, width, height);
-            XResizeWindow(display, client_window, width, int_max(1, height - PORTAL_TITLE_BAR_HEIGHT));
+            XResizeWindow(
+                display,
+                client_window,
+                width,
+                common.int_max(1, height - PORTAL_TITLE_BAR_HEIGHT)
+            );
         }
         else
         {
@@ -454,8 +459,8 @@ void resize_portal(Portal *portal, unsigned int width, unsigned int height)
                 .window = client_window,
                 .x = client_x_root,
                 .y = client_y_root,
-                .width = int_max(1, width),
-                .height = int_max(1, height - PORTAL_TITLE_BAR_HEIGHT),
+                .width = common.int_max(1, width),
+                .height = common.int_max(1, height - PORTAL_TITLE_BAR_HEIGHT),
                 .border_width = 0,
                 .above = None,
                 .override_redirect = False
@@ -515,8 +520,8 @@ void synchronize_portal(Portal *portal)
     bool is_framed = is_portal_frame_valid(portal);
     int portal_x_root = client_x_root;
     int portal_y_root = client_y_root + (is_framed ? -PORTAL_TITLE_BAR_HEIGHT : 0);
-    unsigned int portal_width = int_max(1, client_width);
-    unsigned int portal_height = int_max(1, client_height + (is_framed ? PORTAL_TITLE_BAR_HEIGHT : 0));
+    unsigned int portal_width = common.int_max(1, client_width);
+    unsigned int portal_height = common.int_max(1, client_height + (is_framed ? PORTAL_TITLE_BAR_HEIGHT : 0));
 
     // Move the portal if the position has changed and the portal is not framed.
     // Framed portals have their position controlled by the WM, not the client.

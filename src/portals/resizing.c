@@ -30,7 +30,7 @@ static void start_resizing_portal(Portal *portal, int mouse_root_x, int mouse_ro
     mouse_start_root_y = mouse_root_y;
 
     // Show the resizing cursor.
-    add_marker(string_to_id("resizing_portal"), XC_bottom_right_corner, true);
+    add_marker(common.string_to_id("resizing_portal"), XC_bottom_right_corner, true);
 }
 
 static void update_resizing_portal(int mouse_root_x, int mouse_root_y, Time event_time)
@@ -46,8 +46,8 @@ static void update_resizing_portal(int mouse_root_x, int mouse_root_y, Time even
     {
         if (hints.flags & PMinSize)
         {
-            min_width = int_max(MINIMUM_PORTAL_WIDTH, hints.min_width);
-            min_height = int_max(MINIMUM_PORTAL_HEIGHT, hints.min_height);
+            min_width = common.int_max(MINIMUM_PORTAL_WIDTH, hints.min_width);
+            min_height = common.int_max(MINIMUM_PORTAL_HEIGHT, hints.min_height);
             if (is_portal_frame_valid(resized_portal))
             {
                 min_height += PORTAL_TITLE_BAR_HEIGHT;
@@ -56,11 +56,11 @@ static void update_resizing_portal(int mouse_root_x, int mouse_root_y, Time even
     }
 
     // Calculate new portal width and height.
-    int new_portal_width = int_max(
+    int new_portal_width = common.int_max(
         min_width,
         portal_start_width + (mouse_root_x - mouse_start_root_x)
     );
-    int new_portal_height = int_max(
+    int new_portal_height = common.int_max(
         min_height,
         portal_start_height + (mouse_root_y - mouse_start_root_y)
     );
@@ -79,7 +79,7 @@ static void stop_resizing_portal()
     resized_portal = NULL;
 
     // Hide the resizing cursor.
-    remove_marker(string_to_id("resizing_portal"));
+    remove_marker(common.string_to_id("resizing_portal"));
 }
 
 bool is_portal_resizing()
@@ -90,7 +90,7 @@ bool is_portal_resizing()
 HANDLE(Initialize)
 {
     int framerate;
-    get_config_int(&framerate, CFG_KEY_FRAMERATE, CFG_DEFAULT_FRAMERATE);
+    common.get_config_int(&framerate, CFG_KEY_FRAMERATE, CFG_DEFAULT_FRAMERATE);
     throttle_ms = framerate_to_throttle_ms(framerate);
 }
 
@@ -161,10 +161,10 @@ HANDLE(RawMotionNotify)
     // Create or remove the resize marker as needed.
     if (in_resize_area)
     {
-        add_marker(string_to_id("hover_resize"), XC_bottom_right_corner, true);
+        add_marker(common.string_to_id("hover_resize"), XC_bottom_right_corner, true);
     }
     else
     {
-        remove_marker(string_to_id("hover_resize"));
+        remove_marker(common.string_to_id("hover_resize"));
     }
 }

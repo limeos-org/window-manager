@@ -19,7 +19,7 @@ static void start_dragging_portal(Portal *portal, int mouse_root_x, int mouse_ro
     mouse_start_root_y = mouse_root_y;
 
     // Show the dragging cursor.
-    add_marker(string_to_id("dragging_portal"), XC_fleur, true);
+    add_marker(common.string_to_id("dragging_portal"), XC_fleur, true);
 }
 
 static void update_dragging_portal(int mouse_root_x, int mouse_root_y, Time event_time)
@@ -45,7 +45,7 @@ static void stop_dragging_portal()
     dragged_portal = NULL;
 
     // Hide the dragging cursor.
-    remove_marker(string_to_id("dragging_portal"));
+    remove_marker(common.string_to_id("dragging_portal"));
 }
 
 bool is_portal_dragging()
@@ -56,7 +56,7 @@ bool is_portal_dragging()
 HANDLE(Initialize)
 {
     int framerate;
-    get_config_int(&framerate, CFG_KEY_FRAMERATE, CFG_DEFAULT_FRAMERATE);
+    common.get_config_int(&framerate, CFG_KEY_FRAMERATE, CFG_DEFAULT_FRAMERATE);
     throttle_ms = framerate_to_throttle_ms(framerate);
 }
 
@@ -138,11 +138,11 @@ HANDLE(RawMotionNotify)
     // remove_marker is safe to call if not exists.
     if (in_frame_area)
     {
-        add_marker(string_to_id("hover_frame"), XC_hand2, false);
+        add_marker(common.string_to_id("hover_frame"), XC_hand2, false);
     }
     else
     {
-        remove_marker(string_to_id("hover_frame"));
+        remove_marker(common.string_to_id("hover_frame"));
     }
 }
 

@@ -137,5 +137,5 @@ HANDLE(Initialize)
     }
 
     // Add the default marker.
-    add_marker(string_to_id("default"), XC_left_ptr, false);
+    add_marker(common.string_to_id("default"), XC_left_ptr, false);
 }

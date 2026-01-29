@@ -5,12 +5,12 @@
 CC = clang
 CFLAGS = -Wall -Wextra -g -MMD -MP
 
-PKG_CONFIG_DEPS = x11 xcomposite xi xrandr xfixes cairo dbus-1
-CFLAGS += $(shell pkg-config --cflags $(PKG_CONFIG_DEPS))
-
-INTERNAL_LIBS = -L/usr/local/lib -l:limeos-common-lib.a
-EXTERNAL_LIBS = $(shell pkg-config --libs $(PKG_CONFIG_DEPS)) -ldl
+INTERNAL_LIBS = $(shell pkg-config --libs limeos-common-lib)
+EXTERNAL_DEPS = x11 xcomposite xi xrandr xfixes cairo dbus-1
+EXTERNAL_LIBS = $(shell pkg-config --libs $(EXTERNAL_DEPS))
 LIBS = $(INTERNAL_LIBS) $(EXTERNAL_LIBS)
+
+CFLAGS += $(shell pkg-config --cflags $(EXTERNAL_DEPS))
 
 # ---
 # Build

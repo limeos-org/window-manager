@@ -152,7 +152,7 @@ HANDLE(Initialize)
 {
     // Check if theme is set explicitly in config.
     char theme_config[CONFIG_MAX_VALUE_LENGTH];
-    get_config_str(theme_config, sizeof(theme_config), CFG_KEY_THEME, CFG_DEFAULT_THEME);
+    common.get_config_str(theme_config, sizeof(theme_config), CFG_KEY_THEME, CFG_DEFAULT_THEME);
 
     if (strcmp(theme_config, "light") == 0)
     {

@@ -55,7 +55,7 @@ void draw_background(cairo_t *cr)
     {
         // Fall back to solid color background.
         double r, g, b;
-        hex_to_rgb(cfg_background_color, &r, &g, &b);
+        common.hex_to_rgb(cfg_background_color, &r, &g, &b);
         cairo_set_source_rgb(cr, r, g, b);
         cairo_paint(cr);
     }
@@ -67,9 +67,9 @@ HANDLE(Initialize)
     Window root_window = DefaultRootWindow(display);
 
     // Get configuration values.
-    get_config_str(cfg_background_mode, sizeof(cfg_background_mode), CFG_KEY_BACKGROUND_MODE, CFG_DEFAULT_BACKGROUND_MODE);
-    get_config_hex(&cfg_background_color, CFG_KEY_BACKGROUND_COLOR, CFG_DEFAULT_BACKGROUND_COLOR);
-    get_config_path(cfg_background_image_path, sizeof(cfg_background_image_path), CFG_KEY_BACKGROUND_IMAGE_PATH, CFG_DEFAULT_BACKGROUND_IMAGE_PATH);
+    common.get_config_str(cfg_background_mode, sizeof(cfg_background_mode), CFG_KEY_BACKGROUND_MODE, CFG_DEFAULT_BACKGROUND_MODE);
+    common.get_config_hex(&cfg_background_color, CFG_KEY_BACKGROUND_COLOR, CFG_DEFAULT_BACKGROUND_COLOR);
+    common.get_config_path(cfg_background_image_path, sizeof(cfg_background_image_path), CFG_KEY_BACKGROUND_IMAGE_PATH, CFG_DEFAULT_BACKGROUND_IMAGE_PATH);
 
     // Prepare xlib surface.
     int screen = DefaultScreen(display);
@@ -81,7 +81,7 @@ HANDLE(Initialize)
     if (strcmp(cfg_background_mode, "image") == 0)
     {
         char expanded_path[MAX_PATH];
-        expand_path(cfg_background_image_path, expanded_path, sizeof(expanded_path));
+        common.expand_path(cfg_background_image_path, expanded_path, sizeof(expanded_path));
         png_surface = load_background_image(display, expanded_path);
     }
 

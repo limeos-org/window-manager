@@ -51,7 +51,7 @@ int main()
     const int library_count = sizeof(libraries) / sizeof(libraries[0]);
     for (int i = 0; i < library_count; i++)
     {
-        if (!is_library_available(libraries[i]))
+        if (!common.is_library_available(libraries[i]))
         {
             LOG_ERROR("Missing library \"%s\".", libraries[i]);
             exit(EXIT_FAILURE);

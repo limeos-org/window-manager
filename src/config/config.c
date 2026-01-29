@@ -54,7 +54,7 @@ HANDLE(Prepare)
 {
     // Expand the configuration file path.
     char config_file_path[MAX_PATH];
-    if (expand_path(CFG_FILE_PATH, config_file_path, sizeof(config_file_path)) != 0)
+    if (common.expand_path(CFG_FILE_PATH, config_file_path, sizeof(config_file_path)) != 0)
     {
         LOG_WARNING("Failed to expand configuration file path (%s).", CFG_FILE_PATH);
         return;
@@ -62,7 +62,7 @@ HANDLE(Prepare)
 
     // Initialize the configuration system, creating the default config file
     // if it doesn't exist.
-    if (init_config_with_defaults(config_file_path, default_config) != 0)
+    if (common.init_config_with_defaults(config_file_path, default_config) != 0)
     {
         LOG_WARNING("Failed to initialize configuration system.");
     }

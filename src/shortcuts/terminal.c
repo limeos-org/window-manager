@@ -18,7 +18,7 @@ static void handle_terminal_shortcut()
     if (pid == 0)
     {
         // Replace the current process with the terminal.
-        char** args = split_string(terminal_command, " ", NULL);
+        char** args = common.split_string(terminal_command, " ", NULL);
         if (args == NULL) _exit(EXIT_FAILURE);
         execvp(args[0], args);
 
@@ -29,7 +29,10 @@ static void handle_terminal_shortcut()
 
 HANDLE(Initialize)
 {
-    get_config_str(terminal_command, sizeof(terminal_command), CFG_KEY_TERMINAL_COMMAND, CFG_DEFAULT_TERMINAL_COMMAND);
+    common.get_config_str(
+        terminal_command, sizeof(terminal_command),
+        CFG_KEY_TERMINAL_COMMAND, CFG_DEFAULT_TERMINAL_COMMAND
+    );
 }
 
 HANDLE(ShortcutPressed)
