@@ -2,14 +2,6 @@
 
 static int shortcut_input[MAX_SHORTCUT_KEYS] = {0};
 
-static void clear_shortcut_input()
-{
-    for (int i = 0; i < MAX_SHORTCUT_KEYS; i++)
-    {
-        shortcut_input[i] = 0;
-    }
-}
-
 static void add_key_to_shortcut_input(int key)
 {
     // Ensure the shortcut_input array is not full.
@@ -38,7 +30,7 @@ static void remove_key_from_shortcut_input(int key)
     }
 }
 
-static bool is_key_in_shortcut_input(int key)
+static bool shortcut_input_contains_key(int key)
 {
     for (int i = 0; i < MAX_SHORTCUT_KEYS; i++)
     {
@@ -50,9 +42,23 @@ static bool is_key_in_shortcut_input(int key)
     return false;
 }
 
-static void check_shortcut_input()
+static void clear_shortcut_input_keys()
 {
-    // Check if the current shortcut input matches any registered shortcuts.
+    for (int i = 0; i < MAX_SHORTCUT_KEYS; i++)
+    {
+        if (shortcut_input[i] == 0) continue;
+        // Keep modifiers in the buffer since they're likely still held.
+        // Clear the keys so they can be re-pressed to trigger the shortcut again.
+        if (x_keysym_to_modifier(shortcut_input[i]) == 0)
+        {
+            shortcut_input[i] = 0;
+        }
+    }
+}
+
+static void match_and_invoke_shortcut()
+{
+    // Attempt to match the current input against registered shortcuts.
     char shortcut_name[MAX_SHORTCUT_NAME];
     int result = find_shortcut(shortcut_input, MAX_SHORTCUT_KEYS, shortcut_name, MAX_SHORTCUT_NAME);
     if (result != 0)
@@ -60,15 +66,15 @@ static void check_shortcut_input()
         return;
     }
 
+    // Clear the keys to allow re-triggering while modifier is held.
+    // This also protects against missed release events during focus changes.
+    clear_shortcut_input_keys();
+
     // Invoke the ShortcutPressed event.
     call_event_handlers((Event*)&(ShortcutPressedEvent){
         .type = ShortcutPressed,
         .name = shortcut_name
     });
-
-    // Clear the input buffer to prevent keys from getting "stuck" if release
-    // events are missed during focus changes.
-    clear_shortcut_input();
 }
 
 HANDLE(RawKeyPress)
@@ -79,9 +85,9 @@ HANDLE(RawKeyPress)
     // Convert keycode to keysym.
     KeySym key = XkbKeycodeToKeysym(display, _event->key_code, 0, 0);
 
-    if (is_key_in_shortcut_input(key)) return;
+    if (shortcut_input_contains_key(key)) return;
     add_key_to_shortcut_input(key);
-    check_shortcut_input();
+    match_and_invoke_shortcut();
 }
 
 HANDLE(RawKeyRelease)
@@ -92,7 +98,7 @@ HANDLE(RawKeyRelease)
     // Convert keycode to keysym.
     KeySym key = XkbKeycodeToKeysym(display, _event->key_code, 0, 0);
 
-    if (!is_key_in_shortcut_input(key)) return;
+    if (!shortcut_input_contains_key(key)) return;
     remove_key_from_shortcut_input(key);
 }
 

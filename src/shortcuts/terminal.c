@@ -1,7 +1,5 @@
 #include "../all.h"
 
-static char terminal_command[CONFIG_MAX_VALUE_LENGTH];
-
 static void handle_terminal_shortcut()
 {
     pid_t pid = fork();
@@ -18,21 +16,14 @@ static void handle_terminal_shortcut()
     if (pid == 0)
     {
         // Replace the current process with the terminal.
-        char** args = common.split_string(terminal_command, " ", NULL);
+        const char *command = get_terminal_command();
+        char **args = common.split_string(command, " ", NULL);
         if (args == NULL) _exit(EXIT_FAILURE);
         execvp(args[0], args);
 
         // If the process was not replaced, exit the current process.
         _exit(EXIT_FAILURE);
     }
-}
-
-HANDLE(Initialize)
-{
-    common.get_config_str(
-        terminal_command, sizeof(terminal_command),
-        CFG_KEY_TERMINAL_COMMAND, CFG_DEFAULT_TERMINAL_COMMAND
-    );
 }
 
 HANDLE(ShortcutPressed)

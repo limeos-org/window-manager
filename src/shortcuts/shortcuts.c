@@ -1,24 +1,32 @@
+/**
+ * This code is responsible for managing the shortcut registry, including
+ * registration, key grabbing, and lookup of keyboard shortcuts.
+ */
+
 #include "../all.h"
 
+/** A registered keyboard shortcut with its name and key combination. */
 typedef struct {
     char name[MAX_SHORTCUT_NAME];
     int keys[MAX_SHORTCUT_KEYS];
 } Shortcut;
 
 static Shortcut shortcuts[MAX_SHORTCUTS];
+static char terminal_command[CONFIG_MAX_VALUE_LENGTH];
 
 static void grab_shortcut_keys(int *keys, int keys_size)
 {
     Display *display = DefaultDisplay;
     Window root = DefaultRootWindow(display);
 
-    // Go through the keys and separate modifiers from the main key.
+    // Separate modifiers from non-modifier keys.
     unsigned int modifiers = 0;
-    KeyCode keycode = 0;
+    KeyCode keycodes[MAX_SHORTCUT_KEYS] = {0};
+    int keycode_count = 0;
+
     for (int i = 0; i < keys_size; i++)
     {
         if (keys[i] == 0 || keys[i] == NoSymbol) continue;
-
         unsigned int mod = x_keysym_to_modifier(keys[i]);
         if (mod != 0)
         {
@@ -26,23 +34,23 @@ static void grab_shortcut_keys(int *keys, int keys_size)
         }
         else
         {
-            // Non-modifier key - this is the main key to grab.
-            keycode = XKeysymToKeycode(display, keys[i]);
+            keycodes[keycode_count++] = XKeysymToKeycode(display, keys[i]);
         }
     }
 
-    // If no valid keycode was found, return early.
-    if (keycode == 0) return;
-
-    // Grab the key combination on the root window.
-    // GrabModeAsync allows other events to continue processing.
-    XGrabKey(display, keycode, modifiers, root, True, GrabModeAsync, GrabModeAsync);
-
-    // Also grab with NumLock (Mod2Mask) and CapsLock (LockMask) variations
-    // to ensure shortcuts work regardless of these lock states.
-    XGrabKey(display, keycode, modifiers | Mod2Mask, root, True, GrabModeAsync, GrabModeAsync);
-    XGrabKey(display, keycode, modifiers | LockMask, root, True, GrabModeAsync, GrabModeAsync);
-    XGrabKey(display, keycode, modifiers | Mod2Mask | LockMask, root, True, GrabModeAsync, GrabModeAsync);
+    // Grab each non-modifier key with the modifier mask. This ensures all keys
+    // in multi-key shortcuts are grabbed and won't propagate to clients.
+    // We grab with all four NumLock/CapsLock combinations so shortcuts work
+    // whether these locks are on or off.
+    unsigned int locks[] = {0, Mod2Mask, LockMask, Mod2Mask | LockMask};
+    for (int i = 0; i < keycode_count; i++)
+    {
+        if (keycodes[i] == 0) continue;
+        for (int j = 0; j < 4; j++)
+        {
+            XGrabKey(display, keycodes[i], modifiers | locks[j], root, True, GrabModeAsync, GrabModeAsync);
+        }
+    }
 }
 
 static void register_shortcut(const char *name, int *keys, int keys_size)
@@ -89,33 +97,67 @@ static void register_shortcut(const char *name, int *keys, int keys_size)
     grab_shortcut_keys(keys, keys_size);
 }
 
-int find_shortcut(int *keys, int keys_size, char *out_name, int name_size)
+/** Check if a shortcut key array contains a specific key. */
+static bool shortcut_contains_key(int key, int *array, int array_size)
 {
+    for (int i = 0; i < array_size; i++)
+    {
+        if (array[i] == key) return true;
+    }
+    return false;
+}
+
+/** Count non-zero keys in a shortcut key array. */
+static int count_shortcut_keys(int *array, int array_size)
+{
+    int count = 0;
+    for (int i = 0; i < array_size; i++)
+    {
+        if (array[i] != 0) count++;
+    }
+    return count;
+}
+
+const char *get_terminal_command()
+{
+    return terminal_command;
+}
+
+int find_shortcut(int *keys, int keys_size, char *out_name, int out_name_size)
+{
+    int input_key_count = count_shortcut_keys(keys, keys_size);
+
     for (int i = 0; i < MAX_SHORTCUTS; i++)
     {
         // Skip empty/unregistered shortcut slots.
         if (shortcuts[i].name[0] == '\0') continue;
 
-        // Skip if the first key doesn't match (quick rejection).
-        if (shortcuts[i].keys[0] != keys[0]) continue;
+        // Quick rejection: key counts must match.
+        int shortcut_key_count = count_shortcut_keys(shortcuts[i].keys, MAX_SHORTCUT_KEYS);
+        if (shortcut_key_count != input_key_count) continue;
 
-        // Compare all keys.
+        // Order-independent comparison: check that all shortcut keys are
+        // present in the input. Since counts match, this ensures an exact
+        // set match.
         bool match = true;
-        for (int j = 0; j < keys_size; j++)
+        for (int j = 0; j < MAX_SHORTCUT_KEYS; j++)
         {
-            if (shortcuts[i].keys[j] != keys[j])
+            int shortcut_key = shortcuts[i].keys[j];
+            if (shortcut_key == 0) continue;
+
+            if (!shortcut_contains_key(shortcut_key, keys, keys_size))
             {
                 match = false;
                 break;
             }
         }
 
-        // If the keys match, assign the name of the shortcut to the `out_name`
-        // parameter.
-        if (match && name_size > 0)
+        // If the keys match, assign the name of the shortcut to the
+        // `out_name` parameter.
+        if (match && out_name_size > 0)
         {
-            strncpy(out_name, shortcuts[i].name, name_size - 1);
-            out_name[name_size - 1] = '\0';  // Ensure null termination.
+            strncpy(out_name, shortcuts[i].name, out_name_size - 1);
+            out_name[out_name_size - 1] = '\0';  // Ensure null termination.
             return 0;
         }
     }
@@ -127,6 +169,12 @@ HANDLE(Initialize)
 {
     char config_value[CONFIG_MAX_VALUE_LENGTH];
     int keys[MAX_SHORTCUT_KEYS];
+
+    // Load the terminal command.
+    common.get_config_str(
+        terminal_command, sizeof(terminal_command),
+        CFG_KEY_TERMINAL_COMMAND, CFG_DEFAULT_TERMINAL_COMMAND
+    );
 
     // Register the terminal shortcut.
     common.get_config_str(
