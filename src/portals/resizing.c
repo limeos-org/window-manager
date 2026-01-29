@@ -46,8 +46,8 @@ static void update_resizing_portal(int mouse_root_x, int mouse_root_y, Time even
     {
         if (hints.flags & PMinSize)
         {
-            min_width = max(MINIMUM_PORTAL_WIDTH, hints.min_width);
-            min_height = max(MINIMUM_PORTAL_HEIGHT, hints.min_height);
+            min_width = int_max(MINIMUM_PORTAL_WIDTH, hints.min_width);
+            min_height = int_max(MINIMUM_PORTAL_HEIGHT, hints.min_height);
             if (is_portal_frame_valid(resized_portal))
             {
                 min_height += PORTAL_TITLE_BAR_HEIGHT;
@@ -56,11 +56,11 @@ static void update_resizing_portal(int mouse_root_x, int mouse_root_y, Time even
     }
 
     // Calculate new portal width and height.
-    int new_portal_width = max(
+    int new_portal_width = int_max(
         min_width,
         portal_start_width + (mouse_root_x - mouse_start_root_x)
     );
-    int new_portal_height = max(
+    int new_portal_height = int_max(
         min_height,
         portal_start_height + (mouse_root_y - mouse_start_root_y)
     );
@@ -90,7 +90,7 @@ bool is_portal_resizing()
 HANDLE(Initialize)
 {
     int framerate;
-    GET_CONFIG(&framerate, sizeof(framerate), CFG_BUNDLE_FRAMERATE);
+    get_config_int(&framerate, CFG_KEY_FRAMERATE, CFG_DEFAULT_FRAMERATE);
     throttle_ms = framerate_to_throttle_ms(framerate);
 }
 

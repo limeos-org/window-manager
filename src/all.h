@@ -25,11 +25,12 @@
 #include <stdbool.h>
 #include <string.h>
 #include <errno.h>
-#include <dlfcn.h>
 #include <signal.h>
 #include <time.h>
 
+#include <limeos-common-lib.h>
 #include "constants.h"
+
 #include "config/config.h"
 #include "theme/theme.h"
 #include "background/background.h"
@@ -39,10 +40,9 @@
 #include "shortcuts/terminal.h"
 #include "shortcuts/exit.h"
 #include "shortcuts/close.h"
-#include "utils/utils.h"
+#include "utils/framerate.h"
 #include "utils/xlib.h"
 #include "utils/xinput.h"
-#include "utils/log.h"
 #include "utils/cairo.h"
 #include "ewmh/ewmh.h"
 #include "ewmh/client_list.h"

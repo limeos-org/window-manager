@@ -142,8 +142,8 @@ HANDLE(ConfigureRequest)
             .window = client_window,
             .x = portal->x_root,
             .y = portal->y_root + PORTAL_TITLE_BAR_HEIGHT,
-            .width = max(1, portal->width),
-            .height = max(1, portal->height - PORTAL_TITLE_BAR_HEIGHT),
+            .width = int_max(1, portal->width),
+            .height = int_max(1, portal->height - PORTAL_TITLE_BAR_HEIGHT),
             .border_width = 0,
             .above = None,
             .override_redirect = False

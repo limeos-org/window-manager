@@ -117,7 +117,7 @@ void destroy_portal(Portal *portal)
     });
 
     // Unregister the portal.
-    scope {
+    {
         // Get the index of the portal in the registry.
         int index = get_portal_index(portal);
         if (index == -1)
@@ -284,7 +284,7 @@ void move_portal(Portal *portal, int x_root, int y_root)
     portal->y_root = y_root;
 
     // Move the portal windows.
-    scope {
+    {
         Window client_window = portal->client_window;
         Window frame_window = portal->frame_window;
 
@@ -406,7 +406,7 @@ void resize_portal(Portal *portal, unsigned int width, unsigned int height)
     portal->height = height;
 
     // Resize the portal windows.
-    scope {
+    {
         Window frame_window = portal->frame_window;
         Window client_window = portal->client_window;
 
@@ -414,7 +414,7 @@ void resize_portal(Portal *portal, unsigned int width, unsigned int height)
         {
             // Resize both the frame and client windows.
             XResizeWindow(display, frame_window, width, height);
-            XResizeWindow(display, client_window, width, max(1, height - PORTAL_TITLE_BAR_HEIGHT));
+            XResizeWindow(display, client_window, width, int_max(1, height - PORTAL_TITLE_BAR_HEIGHT));
         }
         else
         {
@@ -454,8 +454,8 @@ void resize_portal(Portal *portal, unsigned int width, unsigned int height)
                 .window = client_window,
                 .x = client_x_root,
                 .y = client_y_root,
-                .width = max(1, width),
-                .height = max(1, height - PORTAL_TITLE_BAR_HEIGHT),
+                .width = int_max(1, width),
+                .height = int_max(1, height - PORTAL_TITLE_BAR_HEIGHT),
                 .border_width = 0,
                 .above = None,
                 .override_redirect = False
@@ -515,8 +515,8 @@ void synchronize_portal(Portal *portal)
     bool is_framed = is_portal_frame_valid(portal);
     int portal_x_root = client_x_root;
     int portal_y_root = client_y_root + (is_framed ? -PORTAL_TITLE_BAR_HEIGHT : 0);
-    unsigned int portal_width = max(1, client_width);
-    unsigned int portal_height = max(1, client_height + (is_framed ? PORTAL_TITLE_BAR_HEIGHT : 0));
+    unsigned int portal_width = int_max(1, client_width);
+    unsigned int portal_height = int_max(1, client_height + (is_framed ? PORTAL_TITLE_BAR_HEIGHT : 0));
 
     // Move the portal if the position has changed and the portal is not framed.
     // Framed portals have their position controlled by the WM, not the client.

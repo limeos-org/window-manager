@@ -151,8 +151,8 @@ void dispatch_theme_dbus(void)
 HANDLE(Initialize)
 {
     // Check if theme is set explicitly in config.
-    char theme_config[CFG_MAX_VALUE_LENGTH];
-    GET_CONFIG(theme_config, sizeof(theme_config), CFG_BUNDLE_THEME);
+    char theme_config[CONFIG_MAX_VALUE_LENGTH];
+    get_config_str(theme_config, sizeof(theme_config), CFG_KEY_THEME, CFG_DEFAULT_THEME);
 
     if (strcmp(theme_config, "light") == 0)
     {

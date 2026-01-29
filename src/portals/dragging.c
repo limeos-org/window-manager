@@ -56,7 +56,7 @@ bool is_portal_dragging()
 HANDLE(Initialize)
 {
     int framerate;
-    GET_CONFIG(&framerate, sizeof(framerate), CFG_BUNDLE_FRAMERATE);
+    get_config_int(&framerate, CFG_KEY_FRAMERATE, CFG_DEFAULT_FRAMERATE);
     throttle_ms = framerate_to_throttle_ms(framerate);
 }
 

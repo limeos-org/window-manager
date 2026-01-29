@@ -1,6 +1,6 @@
 #include "../all.h"
 
-static char terminal_command[CFG_MAX_VALUE_LENGTH];
+static char terminal_command[CONFIG_MAX_VALUE_LENGTH];
 
 static void handle_terminal_shortcut()
 {
@@ -29,7 +29,7 @@ static void handle_terminal_shortcut()
 
 HANDLE(Initialize)
 {
-    GET_CONFIG(terminal_command, sizeof(terminal_command), CFG_BUNDLE_TERMINAL_COMMAND);
+    get_config_str(terminal_command, sizeof(terminal_command), CFG_KEY_TERMINAL_COMMAND, CFG_DEFAULT_TERMINAL_COMMAND);
 }
 
 HANDLE(ShortcutPressed)

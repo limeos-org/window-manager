@@ -1,31 +1,51 @@
+# ---
+# Common
+# ---
+
 CC = clang
-PKG_CONFIG = x11 xcomposite xi xrandr xfixes cairo dbus-1
-CFLAGS = -Wall -Wextra -g -MMD -MP $(shell pkg-config --cflags $(PKG_CONFIG))
-LIBS = $(shell pkg-config --libs $(PKG_CONFIG))
+CFLAGS = -Wall -Wextra -g -MMD -MP
 
-# Build Configuration
+PKG_CONFIG_DEPS = x11 xcomposite xi xrandr xfixes cairo dbus-1
+CFLAGS += $(shell pkg-config --cflags $(PKG_CONFIG_DEPS))
 
-SRCDIR = src
-OBJDIR = obj
-BINDIR = bin
+INTERNAL_LIBS = -L/usr/local/lib -l:limeos-common-lib.a
+EXTERNAL_LIBS = $(shell pkg-config --libs $(PKG_CONFIG_DEPS)) -ldl
+LIBS = $(INTERNAL_LIBS) $(EXTERNAL_LIBS)
 
-TARGET = $(BINDIR)/limeos-window-manager
+# ---
+# Build
+# ---
 
-SOURCES = $(shell find $(SRCDIR) -name '*.c')
-OBJECTS = $(SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
+SRC_DIR = src
+OBJ_DIR = obj
+BIN_DIR = bin
 
-INCLUDES = $(shell find $(SRCDIR) -type d -exec printf "-I{} " \;)
+TARGET = $(BIN_DIR)/limeos-window-manager
+
+SOURCES = $(shell find $(SRC_DIR) -name '*.c')
+OBJECTS = $(SOURCES:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
+DEPS = $(OBJECTS:.o=.d)
+-include $(DEPS)
+
+INCLUDES = $(shell find $(SRC_DIR) -type d -exec printf "-I{} " \;)
 CFLAGS += $(INCLUDES)
 
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
-	@mkdir -p $(BINDIR)
+	@mkdir -p $(BIN_DIR)
 	$(CC) $(OBJECTS) -o $@ $(LIBS)
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.c
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -rf $(OBJ_DIR) $(BIN_DIR)
+
+# ---
+# Setup
+# ---
 
 setup:
 	@echo "[" > compile_commands.json
@@ -37,9 +57,8 @@ setup:
 	@echo "]" >> compile_commands.json
 	@echo "Generated compile_commands.json"
 
-clean:
-	rm -rf $(OBJDIR) $(BINDIR)
-
-# Special Directives
+# ---
+# Other
+# ---
 
 .PHONY: all clean setup

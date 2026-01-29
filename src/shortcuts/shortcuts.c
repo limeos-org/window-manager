@@ -125,21 +125,21 @@ int find_shortcut(int *keys, int keys_size, char *out_name, int name_size)
 
 HANDLE(Initialize)
 {
-    char config_value[CFG_MAX_VALUE_LENGTH];
+    char config_value[CONFIG_MAX_VALUE_LENGTH];
     int keys[MAX_SHORTCUT_KEYS];
 
     // Register the terminal shortcut.
-    GET_CONFIG(config_value, CFG_MAX_VALUE_LENGTH, CFG_BUNDLE_TERMINAL_SHORTCUT);
+    get_config_str(config_value, sizeof(config_value), CFG_KEY_TERMINAL_SHORTCUT, CFG_DEFAULT_TERMINAL_SHORTCUT);
     x_key_names_to_symbols(config_value, '+', keys, MAX_SHORTCUT_KEYS);
     register_shortcut(CFG_KEY_TERMINAL_SHORTCUT, keys, MAX_SHORTCUT_KEYS);
 
     // Register the exit shortcut.
-    GET_CONFIG(config_value, CFG_MAX_VALUE_LENGTH, CFG_BUNDLE_EXIT_SHORTCUT);
+    get_config_str(config_value, sizeof(config_value), CFG_KEY_EXIT_SHORTCUT, CFG_DEFAULT_EXIT_SHORTCUT);
     x_key_names_to_symbols(config_value, '+', keys, MAX_SHORTCUT_KEYS);
     register_shortcut(CFG_KEY_EXIT_SHORTCUT, keys, MAX_SHORTCUT_KEYS);
 
     // Register the close shortcut.
-    GET_CONFIG(config_value, CFG_MAX_VALUE_LENGTH, CFG_BUNDLE_CLOSE_SHORTCUT);
+    get_config_str(config_value, sizeof(config_value), CFG_KEY_CLOSE_SHORTCUT, CFG_DEFAULT_CLOSE_SHORTCUT);
     x_key_names_to_symbols(config_value, '+', keys, MAX_SHORTCUT_KEYS);
     register_shortcut(CFG_KEY_CLOSE_SHORTCUT, keys, MAX_SHORTCUT_KEYS);
 }

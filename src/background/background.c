@@ -67,9 +67,9 @@ HANDLE(Initialize)
     Window root_window = DefaultRootWindow(display);
 
     // Get configuration values.
-    GET_CONFIG(cfg_background_mode, sizeof(cfg_background_mode), CFG_BUNDLE_BACKGROUND_MODE);
-    GET_CONFIG(&cfg_background_color, sizeof(cfg_background_color), CFG_BUNDLE_BACKGROUND_COLOR);
-    GET_CONFIG(cfg_background_image_path, sizeof(cfg_background_image_path), CFG_BUNDLE_BACKGROUND_IMAGE_PATH);
+    get_config_str(cfg_background_mode, sizeof(cfg_background_mode), CFG_KEY_BACKGROUND_MODE, CFG_DEFAULT_BACKGROUND_MODE);
+    get_config_hex(&cfg_background_color, CFG_KEY_BACKGROUND_COLOR, CFG_DEFAULT_BACKGROUND_COLOR);
+    get_config_path(cfg_background_image_path, sizeof(cfg_background_image_path), CFG_KEY_BACKGROUND_IMAGE_PATH, CFG_DEFAULT_BACKGROUND_IMAGE_PATH);
 
     // Prepare xlib surface.
     int screen = DefaultScreen(display);
