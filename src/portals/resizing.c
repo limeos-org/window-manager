@@ -14,18 +14,18 @@ static Time last_resize_time = 0;
 bool is_portal_resize_area(Portal *portal, int rel_x, int rel_y)
 {
     // Check if the position is within the bottom-right corner of the portal.
-    return (rel_x >= (int)portal->width - PORTAL_RESIZE_AREA_SIZE &&
-            rel_x <= (int)portal->width &&
-            rel_y >= (int)portal->height - PORTAL_RESIZE_AREA_SIZE &&
-            rel_y <= (int)portal->height);
+    return (rel_x >= (int)portal->geometry.width - PORTAL_RESIZE_AREA_SIZE &&
+            rel_x <= (int)portal->geometry.width &&
+            rel_y >= (int)portal->geometry.height - PORTAL_RESIZE_AREA_SIZE &&
+            rel_y <= (int)portal->geometry.height);
 }
 
 static void start_resizing_portal(Portal *portal, int mouse_root_x, int mouse_root_y)
 {
     is_resizing = true;
     resized_portal = portal;
-    portal_start_width = portal->width;
-    portal_start_height = portal->height;
+    portal_start_width = portal->geometry.width;
+    portal_start_height = portal->geometry.height;
     mouse_start_root_x = mouse_root_x;
     mouse_start_root_y = mouse_root_y;
 
@@ -153,8 +153,8 @@ HANDLE(RawMotionNotify)
     bool in_resize_area = false;
     if (portal != NULL && is_portal_frame_valid(portal))
     {
-        int rel_x = pointer_x_root - portal->x_root;
-        int rel_y = pointer_y_root - portal->y_root;
+        int rel_x = pointer_x_root - portal->geometry.x_root;
+        int rel_y = pointer_y_root - portal->geometry.y_root;
         in_resize_area = is_portal_resize_area(portal, rel_x, rel_y);
     }
 

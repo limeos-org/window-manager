@@ -13,8 +13,8 @@ static void start_dragging_portal(Portal *portal, int mouse_root_x, int mouse_ro
 {
     is_dragging = true;
     dragged_portal = portal;
-    portal_start_x = portal->x_root;
-    portal_start_y = portal->y_root;
+    portal_start_x = portal->geometry.x_root;
+    portal_start_y = portal->geometry.y_root;
     mouse_start_root_x = mouse_root_x;
     mouse_start_root_y = mouse_root_y;
 
@@ -123,8 +123,8 @@ HANDLE(RawMotionNotify)
 
     if (portal != NULL && is_portal_frame_valid(portal))
     {
-        int rel_x = pointer_x_root - portal->x_root;
-        int rel_y = pointer_y_root - portal->y_root;
+        int rel_x = pointer_x_root - portal->geometry.x_root;
+        int rel_y = pointer_y_root - portal->geometry.y_root;
 
         // Only show frame cursor if not in resize area (resize takes priority).
         if (!is_portal_resize_area(portal, rel_x, rel_y) &&

@@ -16,6 +16,12 @@
 /** The minimum height of a portal in pixels. */
 #define MINIMUM_PORTAL_HEIGHT 64
 
+/** A geometry rectangle with root-relative position and dimensions. */
+typedef struct {
+    int x_root, y_root;
+    unsigned int width, height;
+} PortalGeometry;
+
 /**
  * A portal represents a window pair consisting of a decorative frame and the
  * client content area, along with its geometry and rendering state.
@@ -26,13 +32,15 @@ typedef struct {
     bool top_level;
     bool mapped;
     bool override_redirect;
-    int x_root, y_root;
-    unsigned int width, height;
+    bool fullscreen;
+    PortalGeometry geometry;
+    PortalGeometry geometry_backup;
     Window frame_window;
     cairo_t *frame_cr;
+    Visual *frame_visual;
     Window client_window;
     Atom client_window_type;
-    Visual *visual;
+    Visual *client_visual;
 } Portal;
 
 /**

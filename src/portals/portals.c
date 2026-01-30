@@ -66,13 +66,14 @@ Portal *create_portal(Window client_window)
         .initialized = false,
         .mapped = false,
         .top_level = false,
-        .x_root = 0,
-        .y_root = 0,
-        .width = 1,
-        .height = 1,
+        .fullscreen = false,
+        .geometry = {0, 0, 1, 1},
+        .geometry_backup = {0, 0, 0, 0},
         .frame_window = None,
         .frame_cr = NULL,
-        .client_window = client_window
+        .client_window = client_window,
+        .client_visual = NULL,
+        .frame_visual = NULL
     };
 
     // Store the portal in a variable for easier access.
@@ -196,7 +197,7 @@ void initialize_portal(Portal *portal)
     {
         client_width = client_attrs.width;
         client_height = client_attrs.height;
-        portal->visual = client_attrs.visual;
+        portal->client_visual = client_attrs.visual;
         portal->override_redirect = client_attrs.override_redirect;
     }
 
@@ -205,10 +206,10 @@ void initialize_portal(Portal *portal)
     {
         // Set the portal geometry before creating the frame, so the frame
         // is created with the correct position and dimensions.
-        portal->x_root = client_x_root;
-        portal->y_root = client_y_root;
-        portal->width = client_width;
-        portal->height = client_height + PORTAL_TITLE_BAR_HEIGHT;
+        portal->geometry.x_root = client_x_root;
+        portal->geometry.y_root = client_y_root;
+        portal->geometry.width = client_width;
+        portal->geometry.height = client_height + PORTAL_TITLE_BAR_HEIGHT;
 
         create_portal_frame(portal);
     }
@@ -280,8 +281,8 @@ void move_portal(Portal *portal, int x_root, int y_root)
     if (portal->initialized == false) return;
 
     // Move the portal itself.
-    portal->x_root = x_root;
-    portal->y_root = y_root;
+    portal->geometry.x_root = x_root;
+    portal->geometry.y_root = y_root;
 
     // Move the portal windows.
     {
@@ -402,8 +403,8 @@ void resize_portal(Portal *portal, unsigned int width, unsigned int height)
     if (!is_portal_client_valid(portal)) return;
 
     // Resize the portal itself.
-    portal->width = width;
-    portal->height = height;
+    portal->geometry.width = width;
+    portal->geometry.height = height;
 
     // Resize the portal windows.
     {
@@ -487,6 +488,10 @@ void synchronize_portal(Portal *portal)
     // Ensure the portal has been initialized.
     if (portal->initialized == false) return;
 
+    // Skip synchronization for fullscreen portals, their geometry is
+    // managed by fullscreen.c and should not be modified.
+    if (portal->fullscreen) return;
+
     // Check if the client window still exists (may have been destroyed).
     if (!is_portal_client_valid(portal)) return;
 
@@ -525,13 +530,13 @@ void synchronize_portal(Portal *portal)
 
     // Move the portal if the position has changed and the portal is not framed.
     // Framed portals have their position controlled by the WM, not the client.
-    if (!is_framed && (portal_x_root != portal->x_root || portal_y_root != portal->y_root))
+    if (!is_framed && (portal_x_root != portal->geometry.x_root || portal_y_root != portal->geometry.y_root))
     {
         move_portal(portal, portal_x_root, portal_y_root);
     }
 
     // Resize the portal, only if the dimensions have changed.
-    if (portal_width != portal->width || portal_height != portal->height)
+    if (portal_width != portal->geometry.width || portal_height != portal->geometry.height)
     {
         resize_portal(portal, portal_width, portal_height);
     }
@@ -675,8 +680,8 @@ void map_portal(Portal *portal)
             int screen = DefaultScreen(display);
             int screen_width = DisplayWidth(display, screen);
             int screen_height = DisplayHeight(display, screen);
-            int center_x = (screen_width - (int)portal->width) / 2;
-            int center_y = (screen_height - (int)portal->height) / 2;
+            int center_x = (screen_width - (int)portal->geometry.width) / 2;
+            int center_y = (screen_height - (int)portal->geometry.height) / 2;
             move_portal(portal, center_x, center_y);
         }
     }
@@ -791,10 +796,10 @@ Portal *find_portal_at_pos(int x_root, int y_root)
         if (portal->mapped == false) continue;
 
         // Check if the portal is located at the specified position.
-        if (x_root >= portal->x_root &&
-            y_root >= portal->y_root &&
-            x_root < portal->x_root + (int)portal->width &&
-            y_root < portal->y_root + (int)portal->height)
+        if (x_root >= portal->geometry.x_root &&
+            y_root >= portal->geometry.y_root &&
+            x_root < portal->geometry.x_root + (int)portal->geometry.width &&
+            y_root < portal->geometry.y_root + (int)portal->geometry.height)
         {
             return portal;
         }

@@ -127,9 +127,9 @@ HANDLE(ConfigureRequest)
         if (_event->value_mask & (CWWidth | CWHeight))
         {
             unsigned int new_width = (_event->value_mask & CWWidth) ?
-                _event->width : portal->width;
+                _event->width : portal->geometry.width;
             unsigned int new_height = (_event->value_mask & CWHeight) ?
-                _event->height + PORTAL_TITLE_BAR_HEIGHT : portal->height;
+                _event->height + PORTAL_TITLE_BAR_HEIGHT : portal->geometry.height;
             resize_portal(portal, new_width, new_height);
         }
 
@@ -140,10 +140,10 @@ HANDLE(ConfigureRequest)
             .display = display,
             .event = client_window,
             .window = client_window,
-            .x = portal->x_root,
-            .y = portal->y_root + PORTAL_TITLE_BAR_HEIGHT,
-            .width = common.int_max(1, portal->width),
-            .height = common.int_max(1, portal->height - PORTAL_TITLE_BAR_HEIGHT),
+            .x = portal->geometry.x_root,
+            .y = portal->geometry.y_root + PORTAL_TITLE_BAR_HEIGHT,
+            .width = common.int_max(1, portal->geometry.width),
+            .height = common.int_max(1, portal->geometry.height - PORTAL_TITLE_BAR_HEIGHT),
             .border_width = 0,
             .above = None,
             .override_redirect = False
@@ -177,6 +177,10 @@ HANDLE(ConfigureNotify)
     // Ensure the event came from a portal client window.
     Portal *portal = find_portal_by_window(_event->window);
     if (portal == NULL || _event->window != portal->client_window) return;
+
+    // Skip geometry enforcement and synchronization for fullscreen portals.
+    // Fullscreen portals have their geometry managed by fullscreen.c.
+    if (portal->fullscreen) return;
 
     // Enforce client position within the frame for framed portals.
     // Some clients try to move themselves even after being reparented.

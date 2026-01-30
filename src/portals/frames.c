@@ -35,10 +35,10 @@ void create_portal_frame(Portal *portal)
 {
     Display *display = DefaultDisplay;
     Window root_window = DefaultRootWindow(display);
-    int x_root = portal->x_root;
-    int y_root = portal->y_root;
-    unsigned int width = portal->width;
-    unsigned int height = portal->height;
+    int x_root = portal->geometry.x_root;
+    int y_root = portal->geometry.y_root;
+    unsigned int width = portal->geometry.width;
+    unsigned int height = portal->geometry.height;
 
     // Create the frame window.
     Window frame_window = x_create_simple_window(
@@ -69,7 +69,7 @@ void create_portal_frame(Portal *portal)
     // Assign the frame window and Cairo context to the portal.
     portal->frame_window = frame_window;
     portal->frame_cr = cr;
-    portal->visual = visual;
+    portal->frame_visual = visual;
 
     // Add the client window to our save-set so it survives if the WM exits.
     XAddToSaveSet(display, portal->client_window);
@@ -109,8 +109,8 @@ void draw_portal_frame(Portal *portal)
 {
     const Theme *theme = get_current_theme();
     cairo_t *cr = portal->frame_cr;
-    unsigned int width = portal->width;
-    unsigned int height = portal->height;
+    unsigned int width = portal->geometry.width;
+    unsigned int height = portal->geometry.height;
     double radius = PORTAL_CORNER_RADIUS;
 
     // Resize the Cairo surface.
@@ -169,7 +169,7 @@ bool is_portal_frame_area(Portal *portal, int rel_x, int rel_y)
 {
     // Check if the position is within the title bar area.
     return (rel_x >= 0 &&
-            rel_x < (int)portal->width &&
+            rel_x < (int)portal->geometry.width &&
             rel_y >= 0 &&
             rel_y < PORTAL_TITLE_BAR_HEIGHT);
 }

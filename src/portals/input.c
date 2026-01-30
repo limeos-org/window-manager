@@ -29,8 +29,8 @@ HANDLE(RawButtonPress)
     if (clicked_portal->override_redirect) return;
 
     // Calculate the position of the pointer relative to the portal.
-    int pointer_x_portal = pointer_x_root - clicked_portal->x_root;
-    int pointer_y_portal = pointer_y_root - clicked_portal->y_root;
+    int pointer_x_portal = pointer_x_root - clicked_portal->geometry.x_root;
+    int pointer_y_portal = pointer_y_root - clicked_portal->geometry.y_root;
 
     // Call all event handlers of the PortalButtonPress event.
     call_event_handlers((Event*)&(PortalButtonPressEvent) {
@@ -70,8 +70,8 @@ HANDLE(RawButtonRelease)
     if (portal == NULL) return;
 
     // Calculate the position of the pointer relative to the portal.
-    int pointer_x_portal = pointer_x_root - portal->x_root;
-    int pointer_y_portal = pointer_y_root - portal->y_root;
+    int pointer_x_portal = pointer_x_root - portal->geometry.x_root;
+    int pointer_y_portal = pointer_y_root - portal->geometry.y_root;
 
     // Call all event handlers of the PortalButtonRelease event.
     call_event_handlers((Event*)&(PortalButtonReleaseEvent) {
@@ -113,8 +113,8 @@ HANDLE(RawMotionNotify)
     if (portal->override_redirect) return;
 
     // Calculate the position of the pointer relative to the portal.
-    int pointer_x_portal = pointer_x_root - portal->x_root;
-    int pointer_y_portal = pointer_y_root - portal->y_root;
+    int pointer_x_portal = pointer_x_root - portal->geometry.x_root;
+    int pointer_y_portal = pointer_y_root - portal->geometry.y_root;
 
     // Call all event handlers of the PortalMotionNotify event.
     call_event_handlers((Event*)&(PortalMotionNotifyEvent) {

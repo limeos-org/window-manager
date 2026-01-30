@@ -21,8 +21,8 @@ static float sample_client_luminance(Display *display, Pixmap pixmap, Portal *po
     // Calculate client area bounds within the frame.
     int client_x = PORTAL_BORDER_WIDTH;
     int client_y = PORTAL_TITLE_BAR_HEIGHT;
-    int client_width = portal->width - 2 * PORTAL_BORDER_WIDTH;
-    int client_height = portal->height - PORTAL_TITLE_BAR_HEIGHT - PORTAL_BORDER_WIDTH;
+    int client_width = portal->geometry.width - 2 * PORTAL_BORDER_WIDTH;
+    int client_height = portal->geometry.height - PORTAL_TITLE_BAR_HEIGHT - PORTAL_BORDER_WIDTH;
 
     // Ensure client area is valid.
     if (client_width <= 0 || client_height <= 0)
@@ -90,10 +90,10 @@ void draw_portal_border(cairo_t *cr, Portal *portal, Pixmap pixmap)
     Display *display = DefaultDisplay;
     const Theme *theme = get_current_theme();
 
-    double x = portal->x_root;
-    double y = portal->y_root;
-    double width = portal->width;
-    double height = portal->height;
+    double x = portal->geometry.x_root;
+    double y = portal->geometry.y_root;
+    double width = portal->geometry.width;
+    double height = portal->geometry.height;
     double radius = PORTAL_CORNER_RADIUS;
     double title_height = PORTAL_TITLE_BAR_HEIGHT;
 

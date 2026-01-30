@@ -76,6 +76,60 @@ static void compositor_init()
     compositor_enabled = true;
 }
 
+static void draw_fullscreen_portal(Portal *portal)
+{
+    if (!compositor_enabled) return;
+
+    Display *display = DefaultDisplay;
+
+    // Grab the server to prevent window destruction during pixmap operations.
+    XGrabServer(display);
+
+    // Verify the client window is viewable.
+    XWindowAttributes attrs;
+    if (!XGetWindowAttributes(display, portal->client_window, &attrs) ||
+        attrs.map_state != IsViewable)
+    {
+        XUngrabServer(display);
+        return;
+    }
+
+    // Get the client window pixmap directly (bypass frame).
+    Pixmap pixmap = XCompositeNameWindowPixmap(display, portal->client_window);
+    if (pixmap == None)
+    {
+        XUngrabServer(display);
+        return;
+    }
+
+    // Release the server grab now that we have the pixmap.
+    XUngrabServer(display);
+
+    // Create surface with screen dimensions.
+    cairo_surface_t *window_surface = cairo_xlib_surface_create(
+        display,
+        pixmap,
+        portal->client_visual,
+        screen_width,
+        screen_height
+    );
+    if (cairo_surface_status(window_surface) != CAIRO_STATUS_SUCCESS)
+    {
+        cairo_surface_destroy(window_surface);
+        XFreePixmap(display, pixmap);
+        return;
+    }
+
+    // Draw at (0,0) covering the entire screen.
+    cairo_set_source_surface(buffer_cr, window_surface, 0, 0);
+    cairo_paint(buffer_cr);
+
+    // Release Cairo surface and free the pixmap.
+    cairo_set_source_rgb(buffer_cr, 0, 0, 0);
+    cairo_surface_destroy(window_surface);
+    XFreePixmap(display, pixmap);
+}
+
 static void draw_portal(Portal *portal)
 {
     if (!compositor_enabled) return;
@@ -85,7 +139,7 @@ static void draw_portal(Portal *portal)
 
     Display *display = DefaultDisplay;
     bool has_frame = is_portal_frame_valid(portal);
-    Visual *visual = portal->visual;
+    Visual *visual = has_frame ? portal->frame_visual : portal->client_visual;
 
     // Get the window to composite (frame if it exists, otherwise client).
     Window target_window = has_frame ?
@@ -124,8 +178,8 @@ static void draw_portal(Portal *portal)
         display,
         pixmap,
         visual,
-        portal->width,
-        portal->height
+        portal->geometry.width,
+        portal->geometry.height
     );
 
     // Check if the surface was created successfully.
@@ -144,10 +198,21 @@ static void draw_portal(Portal *portal)
 
         // Clip to rounded corners and paint portal content.
         cairo_save(buffer_cr);
-        cairo_rounded_rectangle(buffer_cr, portal->x_root, portal->y_root,
-            portal->width, portal->height, PORTAL_CORNER_RADIUS);
+        cairo_rounded_rectangle(
+            buffer_cr,
+            portal->geometry.x_root,
+            portal->geometry.y_root,
+            portal->geometry.width,
+            portal->geometry.height,
+            PORTAL_CORNER_RADIUS
+        );
         cairo_clip(buffer_cr);
-        cairo_set_source_surface(buffer_cr, window_surface, portal->x_root, portal->y_root);
+        cairo_set_source_surface(
+            buffer_cr,
+            window_surface,
+            portal->geometry.x_root,
+            portal->geometry.y_root
+        );
         cairo_paint(buffer_cr);
         cairo_restore(buffer_cr);
 
@@ -157,7 +222,12 @@ static void draw_portal(Portal *portal)
     else
     {
         // No frame, just paint the window content directly.
-        cairo_set_source_surface(buffer_cr, window_surface, portal->x_root, portal->y_root);
+        cairo_set_source_surface(
+            buffer_cr,
+            window_surface,
+            portal->geometry.x_root,
+            portal->geometry.y_root
+        );
         cairo_paint(buffer_cr);
     }
 
@@ -169,24 +239,44 @@ static void draw_portal(Portal *portal)
     XFreePixmap(display, pixmap);
 }
 
+static Portal *find_fullscreen_portal()
+{
+    unsigned int count = 0;
+    Portal **sorted = get_sorted_portals(&count);
+
+    for (int i = count - 1; i >= 0; i--)
+    {
+        Portal *portal = sorted[i];
+        if (portal != NULL && portal->fullscreen && portal->mapped)
+        {
+            return portal;
+        }
+    }
+    return NULL;
+}
+
 static void compositor_redraw()
 {
     if (!compositor_enabled) return;
 
     Display *display = DefaultDisplay;
 
-    // Draw the background to the off-screen buffer.
-    draw_background(buffer_cr);
-
-    // Get sorted portals and draw them to the buffer (back to front).
-    unsigned int portal_count = 0;
-    Portal **portals = get_sorted_portals(&portal_count);
-    for (unsigned int i = 0; i < portal_count; i++)
+    // Draw all portals, or just the fullscreen one to the off-screen buffer.
+    Portal *fullscreen = find_fullscreen_portal();
+    if (fullscreen == NULL)
     {
-        if (portals[i] != NULL)
+        draw_background(buffer_cr);
+
+        unsigned int portal_count = 0;
+        Portal **portals = get_sorted_portals(&portal_count);
+        for (unsigned int i = 0; i < portal_count; i++)
         {
-            draw_portal(portals[i]);
+            if (portals[i] != NULL) draw_portal(portals[i]);
         }
+    }
+    else
+    {
+        draw_fullscreen_portal(fullscreen);
     }
 
     // Copy the completed buffer to the root window in one operation.

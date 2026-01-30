@@ -58,6 +58,7 @@
 #include "portals/dragging.h"
 #include "portals/resizing.h"
 #include "portals/title.h"
+#include "portals/fullscreen.h"
 #include "events/events.h"
 #include "events/handlers.h"
 #include "events/xinput.h"

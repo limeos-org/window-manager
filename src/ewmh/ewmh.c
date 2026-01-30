@@ -78,7 +78,9 @@ static void setup_ewmh_supported_list()
         XInternAtom(display, "_NET_WM_ACTION_RESIZE", False),
         XInternAtom(display, "_NET_WM_MOVERESIZE", False),
         XInternAtom(display, "_NET_MOVERESIZE_WINDOW", False),
-        XInternAtom(display, "_NET_WM_WINDOW_TYPE", False)
+        XInternAtom(display, "_NET_WM_WINDOW_TYPE", False),
+        XInternAtom(display, "_NET_WM_STATE", False),
+        XInternAtom(display, "_NET_WM_STATE_FULLSCREEN", False)
     };
 
     // Set the `_NET_SUPPORTED` property on the root window, listing all the

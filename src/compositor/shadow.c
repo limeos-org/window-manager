@@ -29,10 +29,10 @@ void draw_portal_shadow(cairo_t *cr, Portal *portal)
         // Draw the shadow layer.
         cairo_set_source_rgba(cr, 0, 0, 0, opacity);
         cairo_rounded_rectangle(cr,
-            portal->x_root + offset_x - spread / 2,
-            portal->y_root + offset_y - spread / 2,
-            portal->width + spread,
-            portal->height + spread,
+            portal->geometry.x_root + offset_x - spread / 2,
+            portal->geometry.y_root + offset_y - spread / 2,
+            portal->geometry.width + spread,
+            portal->geometry.height + spread,
             PORTAL_CORNER_RADIUS + spread / 2);
         cairo_fill(cr);
     }

@@ -14,7 +14,7 @@ void draw_portal_title(Portal *portal)
 {
     const Theme *theme = get_current_theme();
     cairo_t *cr = portal->frame_cr;
-    unsigned int width = portal->width;
+    unsigned int width = portal->geometry.width;
 
     // Set the font and color.
     cairo_set_source_rgb(cr,

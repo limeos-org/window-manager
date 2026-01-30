@@ -24,7 +24,7 @@ typedef enum {
 static void calc_portal_trigger_pos(Portal *portal, PortalTriggerType type, int *out_x, int *out_y)
 {
     // Calculate starting position.
-    int x = portal->width - PORTAL_TRIGGER_PADDING - PORTAL_TRIGGER_SIZE;
+    int x = portal->geometry.width - PORTAL_TRIGGER_PADDING - PORTAL_TRIGGER_SIZE;
     int y = (PORTAL_TITLE_BAR_HEIGHT - PORTAL_TRIGGER_SIZE) / 2;
 
     // Adjust based on trigger type.
