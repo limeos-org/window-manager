@@ -36,6 +36,25 @@ HANDLE(PortalDestroyed)
     });
 }
 
+HANDLE(PortalMapped)
+{
+    Portal *portal = event->portal_mapped.portal;
+
+    // Set keyboard focus to the newly mapped portal.
+    XSetInputFocus(
+        DefaultDisplay,
+        portal->client_window,
+        RevertToPointerRoot,
+        CurrentTime
+    );
+
+    // Notify.
+    call_event_handlers((Event*)&(PortalFocusedEvent){
+        .type = PortalFocused,
+        .portal = portal
+    });
+}
+
 HANDLE(PortalButtonPress)
 {
     Portal *portal = event->portal_button_press.portal;
