@@ -41,6 +41,10 @@ HANDLE(PortalMapped)
 {
     Portal *portal = event->portal_mapped.portal;
 
+    // Skip override-redirect windows (popups, dropdowns, menus).
+    // These manage their own focus and stealing it breaks app behavior.
+    if (portal->override_redirect) return;
+
     // Set keyboard focus to the newly mapped portal.
     XSetInputFocus(
         DefaultDisplay,
