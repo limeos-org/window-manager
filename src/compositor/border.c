@@ -2,7 +2,7 @@
  * This code is responsible for portal border drawing.
  *
  * It handles rendering borders for portals, including luminance-based
- * adaptive coloring for the client area border and title bar separator.
+ * adaptive coloring for the client area border.
  */
 
 #include "../all.h"
@@ -134,21 +134,9 @@ void draw_portal_border(cairo_t *cr, Portal *portal, Pixmap pixmap)
     cairo_line_to(cr, x + width - 0.5, y + title_height);
     cairo_stroke(cr);
 
-    // Draw title bar separator / divider. Alpha increases with title bar and
-    // content contrast so the separator remains visible at high-contrast
-    // boundaries.
-    ThemeColorRGB separator = theme->titlebar_separator;
-    bool high_contrast;
-    if (theme->variant == THEME_VARIANT_LIGHT)
-    {
-        high_contrast = luminance <= 0.5f;
-    }
-    else
-    {
-        high_contrast = luminance > 0.5f;
-    }
-    double separator_a = high_contrast ? 0.5 : 0.05;
-    cairo_set_source_rgba(cr, separator.r, separator.g, separator.b, separator_a);
+    // Draw title bar separator / divider.
+    ThemeColorRGBA separator = theme->titlebar_separator;
+    cairo_set_source_rgba(cr, separator.r, separator.g, separator.b, separator.a);
     cairo_set_line_width(cr, 1);
     cairo_move_to(cr, x, y + title_height - 0.5);
     cairo_line_to(cr, x + width, y + title_height - 0.5);

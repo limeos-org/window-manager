@@ -22,7 +22,7 @@ typedef struct {
     ThemeColorRGBA titlebar_bg;
     ThemeColorRGBA titlebar_text;
     ThemeColorRGBA titlebar_border;
-    ThemeColorRGB titlebar_separator;
+    ThemeColorRGBA titlebar_separator;
 } Theme;
 
 /** Returns the current theme based on system color scheme preference. */

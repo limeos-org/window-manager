@@ -12,7 +12,7 @@ static const Theme light_theme = {
     .titlebar_bg = { 0.95, 0.95, 0.95, 1.0 },
     .titlebar_text = { 0.05, 0.05, 0.05, 1.0 },
     .titlebar_border = { 0.0, 0.0, 0.0, 0.15 },
-    .titlebar_separator = { 0.0, 0.0, 0.0 }
+    .titlebar_separator = { 0.0, 0.0, 0.0, 0.15 }
 };
 
 static const Theme dark_theme = {
@@ -20,7 +20,7 @@ static const Theme dark_theme = {
     .titlebar_bg = { 0.141, 0.141, 0.141, 1.0 },
     .titlebar_text = { 1.0, 1.0, 1.0, 1.0 },
     .titlebar_border = { 1.0, 1.0, 1.0, 0.15 },
-    .titlebar_separator = { 1.0, 1.0, 1.0 }
+    .titlebar_separator = { 1.0, 1.0, 1.0, 0.15 }
 };
 
 static const Theme *current = &light_theme;
