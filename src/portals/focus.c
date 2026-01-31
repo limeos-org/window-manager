@@ -14,6 +14,7 @@ HANDLE(PortalDestroyed)
         if (portal == NULL) continue;
         if (portal == destroyed) continue;
         if (!portal->initialized || !portal->mapped) continue;
+        if (portal->workspace != get_current_workspace()) continue;
         next_portal = portal;
         break;
     }

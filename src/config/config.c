@@ -47,13 +47,29 @@ static const char default_config[] =
     CFG_KEY_EXIT_SHORTCUT "=" CFG_DEFAULT_EXIT_SHORTCUT "\n"
     "\n"
     "# The shortcut used to close the focused window.\n"
-    CFG_KEY_CLOSE_SHORTCUT "=" CFG_DEFAULT_CLOSE_SHORTCUT "\n";
+    CFG_KEY_CLOSE_SHORTCUT "=" CFG_DEFAULT_CLOSE_SHORTCUT "\n"
+    "\n"
+    "# The shortcuts used to move between workspaces.\n"
+    CFG_KEY_WORKSPACE_1_SHORTCUT "=" CFG_DEFAULT_WORKSPACE_1_SHORTCUT "\n"
+    CFG_KEY_WORKSPACE_2_SHORTCUT "=" CFG_DEFAULT_WORKSPACE_2_SHORTCUT "\n"
+    CFG_KEY_WORKSPACE_3_SHORTCUT "=" CFG_DEFAULT_WORKSPACE_3_SHORTCUT "\n"
+    CFG_KEY_WORKSPACE_4_SHORTCUT "=" CFG_DEFAULT_WORKSPACE_4_SHORTCUT "\n"
+    CFG_KEY_WORKSPACE_5_SHORTCUT "=" CFG_DEFAULT_WORKSPACE_5_SHORTCUT "\n"
+    CFG_KEY_WORKSPACE_6_SHORTCUT "=" CFG_DEFAULT_WORKSPACE_6_SHORTCUT "\n"
+    "\n"
+    "# The shortcuts used to move windows between workspaces.\n"
+    CFG_KEY_MOVE_WORKSPACE_1_SHORTCUT "=" CFG_DEFAULT_MOVE_WORKSPACE_1_SHORTCUT "\n"
+    CFG_KEY_MOVE_WORKSPACE_2_SHORTCUT "=" CFG_DEFAULT_MOVE_WORKSPACE_2_SHORTCUT "\n"
+    CFG_KEY_MOVE_WORKSPACE_3_SHORTCUT "=" CFG_DEFAULT_MOVE_WORKSPACE_3_SHORTCUT "\n"
+    CFG_KEY_MOVE_WORKSPACE_4_SHORTCUT "=" CFG_DEFAULT_MOVE_WORKSPACE_4_SHORTCUT "\n"
+    CFG_KEY_MOVE_WORKSPACE_5_SHORTCUT "=" CFG_DEFAULT_MOVE_WORKSPACE_5_SHORTCUT "\n"
+    CFG_KEY_MOVE_WORKSPACE_6_SHORTCUT "=" CFG_DEFAULT_MOVE_WORKSPACE_6_SHORTCUT "\n";
 // clang-format on
 
 HANDLE(Prepare)
 {
     // Expand the configuration file path.
-    char config_file_path[MAX_PATH];
+    char config_file_path[COMMON_MAX_PATH_LENGTH];
     if (common.expand_path(CFG_FILE_PATH, config_file_path, sizeof(config_file_path)) != 0)
     {
         LOG_WARNING("Failed to expand configuration file path (%s).", CFG_FILE_PATH);

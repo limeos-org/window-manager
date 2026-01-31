@@ -47,8 +47,8 @@ static void clear_shortcut_input_keys()
     for (int i = 0; i < MAX_SHORTCUT_KEYS; i++)
     {
         if (shortcut_input[i] == 0) continue;
-        // Keep modifiers in the buffer since they're likely still held.
-        // Clear the keys so they can be re-pressed to trigger the shortcut again.
+        // Keep modifiers in the buffer since they're likely still held. Clear 
+        // the keys so they can be re-pressed to trigger the shortcut again.
         if (x_keysym_to_modifier(shortcut_input[i]) == 0)
         {
             shortcut_input[i] = 0;

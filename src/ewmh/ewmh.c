@@ -80,7 +80,11 @@ static void setup_ewmh_supported_list()
         XInternAtom(display, "_NET_MOVERESIZE_WINDOW", False),
         XInternAtom(display, "_NET_WM_WINDOW_TYPE", False),
         XInternAtom(display, "_NET_WM_STATE", False),
-        XInternAtom(display, "_NET_WM_STATE_FULLSCREEN", False)
+        XInternAtom(display, "_NET_WM_STATE_FULLSCREEN", False),
+        XInternAtom(display, "_NET_NUMBER_OF_DESKTOPS", False),
+        XInternAtom(display, "_NET_CURRENT_DESKTOP", False),
+        XInternAtom(display, "_NET_WM_DESKTOP", False),
+        XInternAtom(display, "_NET_DESKTOP_NAMES", False)
     };
 
     // Set the `_NET_SUPPORTED` property on the root window, listing all the

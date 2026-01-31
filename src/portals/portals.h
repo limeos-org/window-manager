@@ -33,6 +33,7 @@ typedef struct {
     bool mapped;
     bool override_redirect;
     bool fullscreen;
+    int workspace;
     PortalGeometry geometry;
     PortalGeometry geometry_backup;
     Window frame_window;

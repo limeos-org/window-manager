@@ -222,6 +222,27 @@ typedef struct {
 } ThemeChangedEvent;
 
 /**
+ * An event that gets triggered when the active workspace changes.
+ */
+#define WorkspaceSwitched 149
+typedef struct {
+    int type;
+    int old_workspace;
+    int new_workspace;
+} WorkspaceSwitchedEvent;
+
+/**
+ * An event that gets triggered when a portal moves to a different workspace.
+ */
+#define PortalWorkspaceChanged 150
+typedef struct {
+    int type;
+    Portal *portal;
+    int old_workspace;
+    int new_workspace;
+} PortalWorkspaceChangedEvent;
+
+/**
  * A union of all possible event types that can be handled by the window
  * manager.
  * 
@@ -237,8 +258,12 @@ typedef union {
     InitializeEvent initialize;
     UpdateEvent update;
 
-    // System events.
+    // Theme events.
     ThemeChangedEvent theme_changed;
+
+    // Workspace events.
+    WorkspaceSwitchedEvent workspace_switched;
+    PortalWorkspaceChangedEvent portal_workspace_changed;
 
     // Portal events.
     PortalCreatedEvent portal_created;

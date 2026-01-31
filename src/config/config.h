@@ -36,3 +36,63 @@
 // Configuration keys and defaults (close_shortcut).
 #define CFG_KEY_CLOSE_SHORTCUT "close_shortcut"
 #define CFG_DEFAULT_CLOSE_SHORTCUT "super+shift+q"
+
+/** Format string for workspace shortcut config keys (use with snprintf). */
+#define CFG_KEY_WORKSPACE_SHORTCUT_FMT "go_to_workspace_%d_shortcut"
+
+/** Format string for workspace shortcut defaults (use with snprintf). */
+#define CFG_DEFAULT_WORKSPACE_SHORTCUT_FMT "super+%d"
+
+/** Configuration key for the 1st workspace shortcut. */
+#define CFG_KEY_WORKSPACE_1_SHORTCUT "go_to_workspace_1_shortcut"
+#define CFG_DEFAULT_WORKSPACE_1_SHORTCUT "super+1"
+
+/** Configuration key for the 2nd workspace shortcut. */
+#define CFG_KEY_WORKSPACE_2_SHORTCUT "go_to_workspace_2_shortcut"
+#define CFG_DEFAULT_WORKSPACE_2_SHORTCUT "super+2"
+
+/** Configuration key for the 3rd workspace shortcut. */
+#define CFG_KEY_WORKSPACE_3_SHORTCUT "go_to_workspace_3_shortcut"
+#define CFG_DEFAULT_WORKSPACE_3_SHORTCUT "super+3"
+
+/** Configuration key for the 4th workspace shortcut. */
+#define CFG_KEY_WORKSPACE_4_SHORTCUT "go_to_workspace_4_shortcut"
+#define CFG_DEFAULT_WORKSPACE_4_SHORTCUT "super+4"
+
+/** Configuration key for the 5th workspace shortcut. */
+#define CFG_KEY_WORKSPACE_5_SHORTCUT "go_to_workspace_5_shortcut"
+#define CFG_DEFAULT_WORKSPACE_5_SHORTCUT "super+5"
+
+/** Configuration key for the 6th workspace shortcut. */
+#define CFG_KEY_WORKSPACE_6_SHORTCUT "go_to_workspace_6_shortcut"
+#define CFG_DEFAULT_WORKSPACE_6_SHORTCUT "super+6"
+
+/** Format string for move-to-workspace shortcut config keys (use with snprintf). */
+#define CFG_KEY_MOVE_WORKSPACE_SHORTCUT_FMT "move_to_workspace_%d_shortcut"
+
+/** Format string for move-to-workspace shortcut defaults (use with snprintf). */
+#define CFG_DEFAULT_MOVE_WORKSPACE_SHORTCUT_FMT "super+shift+%d"
+
+/** Configuration key for moving to the 1st workspace. */
+#define CFG_KEY_MOVE_WORKSPACE_1_SHORTCUT "move_to_workspace_1_shortcut"
+#define CFG_DEFAULT_MOVE_WORKSPACE_1_SHORTCUT "super+shift+1"
+
+/** Configuration key for moving to the 2nd workspace. */
+#define CFG_KEY_MOVE_WORKSPACE_2_SHORTCUT "move_to_workspace_2_shortcut"
+#define CFG_DEFAULT_MOVE_WORKSPACE_2_SHORTCUT "super+shift+2"
+
+/** Configuration key for moving to the 3rd workspace. */
+#define CFG_KEY_MOVE_WORKSPACE_3_SHORTCUT "move_to_workspace_3_shortcut"
+#define CFG_DEFAULT_MOVE_WORKSPACE_3_SHORTCUT "super+shift+3"
+
+/** Configuration key for moving to the 4th workspace. */
+#define CFG_KEY_MOVE_WORKSPACE_4_SHORTCUT "move_to_workspace_4_shortcut"
+#define CFG_DEFAULT_MOVE_WORKSPACE_4_SHORTCUT "super+shift+4"
+
+/** Configuration key for moving to the 5th workspace. */
+#define CFG_KEY_MOVE_WORKSPACE_5_SHORTCUT "move_to_workspace_5_shortcut"
+#define CFG_DEFAULT_MOVE_WORKSPACE_5_SHORTCUT "super+shift+5"
+
+/** Configuration key for moving to the 6th workspace. */
+#define CFG_KEY_MOVE_WORKSPACE_6_SHORTCUT "move_to_workspace_6_shortcut"
+#define CFG_DEFAULT_MOVE_WORKSPACE_6_SHORTCUT "super+shift+6"

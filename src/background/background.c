@@ -6,7 +6,7 @@ static cairo_surface_t *png_surface = NULL;
 
 static char cfg_background_mode[16];
 static unsigned long cfg_background_color;
-static char cfg_background_image_path[MAX_PATH];
+static char cfg_background_image_path[COMMON_MAX_PATH_LENGTH];
 
 static cairo_surface_t *load_background_image(Display *display, const char *filename)
 {
@@ -80,7 +80,7 @@ HANDLE(Initialize)
     // Prepare png surface if neccessary.
     if (strcmp(cfg_background_mode, "image") == 0)
     {
-        char expanded_path[MAX_PATH];
+        char expanded_path[COMMON_MAX_PATH_LENGTH];
         common.expand_path(cfg_background_image_path, expanded_path, sizeof(expanded_path));
         png_surface = load_background_image(display, expanded_path);
     }

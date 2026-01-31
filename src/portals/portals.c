@@ -67,6 +67,7 @@ Portal *create_portal(Window client_window)
         .mapped = false,
         .top_level = false,
         .fullscreen = false,
+        .workspace = -1,
         .geometry = {0, 0, 1, 1},
         .geometry_backup = {0, 0, 0, 0},
         .frame_window = None,
@@ -79,7 +80,6 @@ Portal *create_portal(Window client_window)
     // Store the portal in a variable for easier access.
     Portal *portal = &registry.unsorted[registry.count - 1];
 
-    // Re-sort the portals.
     sort_portals();
 
     // Call all event handlers of the PortalCreated event.
@@ -600,6 +600,9 @@ void map_portal(Portal *portal)
 {
     Display *display = DefaultDisplay;
 
+    // Track if this is the first time the portal is being mapped.
+    bool first_map = !portal->initialized;
+
     // Handle the portals first time being mapped.
     if (portal->initialized == false)
     {
@@ -649,8 +652,9 @@ void map_portal(Portal *portal)
 
     // Apply WM_NORMAL_HINTS position if specified by the client, or center
     // the portal if position is (0,0) or not specified. Override-redirect
-    // windows position themselves, so skip them.
-    if (!portal->override_redirect)
+    // windows position themselves, so skip them. Only do this on first map
+    // to preserve portal position across workspace switches.
+    if (!portal->override_redirect && first_map)
     {
         bool should_center = true;
         XSizeHints hints;

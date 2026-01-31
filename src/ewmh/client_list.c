@@ -1,5 +1,3 @@
-#include "../all.h"
-
 /**
  * This code is responsible for managing the `_NET_CLIENT_LIST` property on
  * the root window, which is an array of top-level client windows that are
@@ -8,6 +6,8 @@
  * 
  * https://specifications.freedesktop.org/wm-spec/1.5/ar01s03.html#id-1.4.4
  */
+
+#include "../all.h"
 
 static void update_ewmh_client_list(Portal *exclude)
 {

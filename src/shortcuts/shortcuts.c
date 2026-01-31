@@ -23,7 +23,6 @@ static void grab_shortcut_keys(int *keys, int keys_size)
     unsigned int modifiers = 0;
     KeyCode keycodes[MAX_SHORTCUT_KEYS] = {0};
     int keycode_count = 0;
-
     for (int i = 0; i < keys_size; i++)
     {
         if (keys[i] == 0 || keys[i] == NoSymbol) continue;
@@ -199,4 +198,32 @@ HANDLE(Initialize)
     );
     x_key_names_to_symbols(config_value, '+', keys, MAX_SHORTCUT_KEYS);
     register_shortcut(CFG_KEY_CLOSE_SHORTCUT, keys, MAX_SHORTCUT_KEYS);
+
+    // Register go-to-workspace shortcuts.
+    for (int i = 0; i < MAX_WORKSPACES; i++)
+    {
+        // Build the config key name and default value for this workspace.
+        char key_name[MAX_SHORTCUT_NAME];
+        char default_value[16];
+        snprintf(key_name, sizeof(key_name), CFG_KEY_WORKSPACE_SHORTCUT_FMT, i + 1);
+        snprintf(default_value, sizeof(default_value), CFG_DEFAULT_WORKSPACE_SHORTCUT_FMT, i + 1);
+
+        // Load the shortcut from config and register it.
+        common.get_config_str(config_value, sizeof(config_value), key_name, default_value);
+        x_key_names_to_symbols(config_value, '+', keys, MAX_SHORTCUT_KEYS);
+        register_shortcut(key_name, keys, MAX_SHORTCUT_KEYS);
+    }
+
+    // Register move-to-workspace shortcuts.
+    for (int i = 0; i < MAX_WORKSPACES; i++)
+    {
+        char key_name[MAX_SHORTCUT_NAME];
+        char default_value[16];
+        snprintf(key_name, sizeof(key_name), CFG_KEY_MOVE_WORKSPACE_SHORTCUT_FMT, i + 1);
+        snprintf(default_value, sizeof(default_value), CFG_DEFAULT_MOVE_WORKSPACE_SHORTCUT_FMT, i + 1);
+
+        common.get_config_str(config_value, sizeof(config_value), key_name, default_value);
+        x_key_names_to_symbols(config_value, '+', keys, MAX_SHORTCUT_KEYS);
+        register_shortcut(key_name, keys, MAX_SHORTCUT_KEYS);
+    }
 }
