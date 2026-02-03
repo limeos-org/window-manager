@@ -516,7 +516,7 @@ void synchronize_portal(Portal *portal)
     }
 
     // Synchronize all child portals as well.
-    Window *child_windows;
+    Window *child_windows = NULL;
     unsigned int child_window_count = 0;
     XQueryTree(
         display,            // Display
@@ -534,6 +534,7 @@ void synchronize_portal(Portal *portal)
             synchronize_portal(child_portal);
         }
     }
+    XFree(child_windows);
 }
 
 Portal *get_top_portal()

@@ -94,6 +94,7 @@ void initialize_event_loop()
 
             // Downcast the X event to a standard event.
             Event *event = (Event*)&x_event;
+            Event xinput_event;
 
             // Check if the X event originated from the XInput2 extension, if it
             // did, convert it to a more developer-friendly event type.
@@ -114,11 +115,9 @@ void initialize_event_loop()
                 }
 
                 // Construct a new event from the XInput2 event data.
-                Event new_event = convert_raw_xinput_event(xi_raw_event);
-                event = &new_event;
-
-                // Cleanup the original cookie data.
+                xinput_event = convert_raw_xinput_event(xi_raw_event);
                 XFreeEventData(display, cookie);
+                event = &xinput_event;
             }
 
             // Call the appropriate event handlers.

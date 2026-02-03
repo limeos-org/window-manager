@@ -318,7 +318,14 @@ int x_query_tree_recursively(Display *display, Window parent, Window **out_child
     int current_position = 0;
 
     // Recursively query the tree.
-    return _x_query_tree_recursively(display, parent, out_children, out_children_count, &current_position);
+    int status = _x_query_tree_recursively(display, parent, out_children, out_children_count, &current_position);
+    if (status != 0)
+    {
+        free(*out_children);
+        *out_children = NULL;
+        *out_children_count = 0;
+    }
+    return status;
 }
 
 bool x_window_is_top_level(Display *display, Window window)
