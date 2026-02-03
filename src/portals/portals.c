@@ -235,6 +235,9 @@ void sort_portals()
         portals_added++;
     }
 
+    // Synchronize top_portal (last valid entry is topmost).
+    top_portal = (portals_added > 0) ? registry.sorted[portals_added - 1] : NULL;
+
     // Clear remaining slots, if any.
     while (portals_added < MAX_PORTALS) {
         registry.sorted[portals_added] = NULL;
@@ -546,9 +549,6 @@ void raise_portal(Portal *portal)
     // Ensure the portal has been initialized.
     if (portal->initialized == false) return;
 
-    // Skip if already on top (sort_portals is expensive).
-    if (top_portal == portal) return;
-
     // Determine which window to raise.
     Window target_window = (is_portal_frame_valid(portal))
         ? portal->frame_window
@@ -559,9 +559,6 @@ void raise_portal(Portal *portal)
 
     // Re-sort the portals.
     sort_portals();
-
-    // Track the top portal.
-    top_portal = portal;
 
     // Call all event handlers of the PortalRaised event.
     call_event_handlers((Event*)&(PortalRaisedEvent){
@@ -620,9 +617,6 @@ void map_portal(Portal *portal)
 
     // Mark the portal as mapped.
     portal->mapped = true;
-
-    // XMapWindow puts the window on top, so update our tracking.
-    if (!portal->override_redirect) top_portal = portal;
 
     // Apply WM_NORMAL_HINTS position if specified by the client, or center
     // the portal if position is (0,0) or not specified. Override-redirect
