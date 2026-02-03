@@ -116,21 +116,17 @@ bool is_portal_triggers_area(Portal *portal, int rel_x, int rel_y)
     return false;
 }
 
-HANDLE(PortalButtonPress)
+void handle_trigger_click(Portal *portal, int rel_x, int rel_y)
 {
-    PortalButtonPressEvent *_event = &event->portal_button_press;
-    Portal *portal = _event->portal;
-
-    // Ensure the event is a left button press.
-    if (_event->button != Button1) return;
-
     // Handle the event based on the trigger type.
-    if (is_portal_trigger_area(portal, TRIGGER_CLOSE, _event->x_portal, _event->y_portal))
+    if (is_portal_trigger_area(portal, TRIGGER_CLOSE, rel_x, rel_y))
     {
         destroy_portal(portal);
+        return;
     }
-    if (is_portal_trigger_area(portal, TRIGGER_ARRANGE, _event->x_portal, _event->y_portal))
+    if (is_portal_trigger_area(portal, TRIGGER_ARRANGE, rel_x, rel_y))
     {
         // arrange_portals();
+        // return;
     }
 }

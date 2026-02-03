@@ -97,44 +97,9 @@ typedef struct {
 } PortalUnmappedEvent;
 
 /**
- * An event triggered when a pointer button is pressed on a portal.
- */
-#define PortalButtonPress 138
-typedef struct {
-    int type;
-    Portal *portal;
-    int x_root; int y_root;
-    int x_portal; int y_portal;
-    int button;
-} PortalButtonPressEvent;
-
-/**
- * An event triggered when a pointer button is released on a portal.
- */
-#define PortalButtonRelease 139
-typedef struct {
-    int type;
-    Portal *portal;
-    int x_root; int y_root;
-    int x_portal; int y_portal;
-    int button;
-} PortalButtonReleaseEvent;
-
-/**
- * An event triggered when a pointer hovers over a portal.
- */
-#define PortalMotionNotify 140
-typedef struct {
-    int type;
-    Portal *portal;
-    int x_root; int y_root;
-    int x_portal; int y_portal;
-} PortalMotionNotifyEvent;
-
-/**
  * An event that gets triggered when a shortcut is pressed.
  */
-#define ShortcutPressed 141
+#define ShortcutPressed 138
 typedef struct {
     int type;
     char *name;
@@ -147,7 +112,7 @@ typedef struct {
  * It bypasses X11's event mask ownership system, at the cost of losing out on 
  * most of the data typically provided with a traditional `ButtonPress` event.
  */
-#define RawButtonPress 142
+#define RawButtonPress 139
 typedef struct {
     int type;
     int button;
@@ -160,7 +125,7 @@ typedef struct {
  * It bypasses X11's event mask ownership system, at the cost of losing out on 
  * most of the data typically provided with a traditional `ButtonRelease` event.
  */
-#define RawButtonRelease 143
+#define RawButtonRelease 140
 typedef struct {
     int type;
     int button;
@@ -173,7 +138,7 @@ typedef struct {
  * It bypasses X11's event mask ownership system, at the cost of losing out on 
  * all of the data typically provided with a traditional `MotionNotify` event.
  */
-#define RawMotionNotify 144
+#define RawMotionNotify 141
 typedef struct {
     int type;
 } RawMotionNotifyEvent;
@@ -185,7 +150,7 @@ typedef struct {
  * It bypasses X11's event mask ownership system, at the cost of losing out on 
  * most of the data typically provided with a traditional `KeyPress` event.
  */
-#define RawKeyPress 145
+#define RawKeyPress 142
 typedef struct {
     int type;
     int key_code;
@@ -198,7 +163,7 @@ typedef struct {
  * It bypasses X11's event mask ownership system, at the cost of losing out on
  * most of the data typically provided with a traditional `KeyRelease` event.
  */
-#define RawKeyRelease 146
+#define RawKeyRelease 143
 typedef struct {
     int type;
     int key_code;
@@ -207,7 +172,7 @@ typedef struct {
 /**
  * An event that gets triggered when a portal receives focus.
  */
-#define PortalFocused 147
+#define PortalFocused 144
 typedef struct {
     int type;
     Portal *portal;
@@ -216,7 +181,7 @@ typedef struct {
 /**
  * An event that gets triggered when the system theme changes.
  */
-#define ThemeChanged 148
+#define ThemeChanged 145
 typedef struct {
     int type;
 } ThemeChangedEvent;
@@ -224,7 +189,7 @@ typedef struct {
 /**
  * An event that gets triggered when the active workspace changes.
  */
-#define WorkspaceSwitched 149
+#define WorkspaceSwitched 146
 typedef struct {
     int type;
     int old_workspace;
@@ -234,7 +199,7 @@ typedef struct {
 /**
  * An event that gets triggered when a portal moves to a different workspace.
  */
-#define PortalWorkspaceChanged 150
+#define PortalWorkspaceChanged 147
 typedef struct {
     int type;
     Portal *portal;
@@ -273,9 +238,6 @@ typedef union {
     PortalUnmappedEvent portal_unmapped;
     PortalRaisedEvent portal_raised;
     PortalTransformedEvent portal_transformed;
-    PortalButtonPressEvent portal_button_press;
-    PortalButtonReleaseEvent portal_button_release;
-    PortalMotionNotifyEvent portal_motion_notify;
     PortalFocusedEvent portal_focused;
 
     // Shortcut events.

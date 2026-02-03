@@ -9,7 +9,7 @@ static int portal_start_x = 0, portal_start_y = 0;
 static int throttle_ms = 0;
 static Time last_drag_time = 0;
 
-static void start_dragging_portal(Portal *portal, int mouse_root_x, int mouse_root_y)
+void start_dragging_portal(Portal *portal, int mouse_root_x, int mouse_root_y)
 {
     is_dragging = true;
     dragged_portal = portal;
@@ -22,7 +22,7 @@ static void start_dragging_portal(Portal *portal, int mouse_root_x, int mouse_ro
     add_marker(common.string_to_id("dragging_portal"), XC_fleur, true);
 }
 
-static void update_dragging_portal(int mouse_root_x, int mouse_root_y, Time event_time)
+void update_dragging_portal(int mouse_root_x, int mouse_root_y, Time event_time)
 {
     // Throttle the dragging to prevent excessive updates.
     if (event_time - last_drag_time < (Time)throttle_ms) return;
@@ -38,7 +38,7 @@ static void update_dragging_portal(int mouse_root_x, int mouse_root_y, Time even
     last_drag_time = event_time;
 }
 
-static void stop_dragging_portal()
+void stop_dragging_portal(void)
 {
     // Disable dragging.
     is_dragging = false;
@@ -58,92 +58,6 @@ HANDLE(Initialize)
     int framerate;
     common.get_config_int(&framerate, CFG_KEY_FRAMERATE, CFG_DEFAULT_FRAMERATE);
     throttle_ms = framerate_to_throttle_ms(framerate);
-}
-
-HANDLE(PortalButtonPress)
-{
-    PortalButtonPressEvent *_event = &event->portal_button_press;
-
-    if (_event->button != Button1) return;
-    if (is_dragging == true) return;
-
-    Portal *portal = _event->portal;
-    if (portal == NULL) return;
-
-    // Ensure we're clicking on the frame area (title bar).
-    if (is_portal_frame_area(portal, _event->x_portal, _event->y_portal) == false) return;
-
-    // Don't start dragging if clicking on a trigger (close button, etc.).
-    if (is_portal_triggers_area(portal, _event->x_portal, _event->y_portal)) return;
-
-    start_dragging_portal(portal, _event->x_root, _event->y_root);
-}
-
-HANDLE(RawButtonRelease)
-{
-    RawButtonReleaseEvent *_event = &event->raw_button_release;
-
-    if (_event->button != Button1) return;
-    if (is_dragging == false) return;
-
-    stop_dragging_portal();
-}
-
-HANDLE(RawMotionNotify)
-{
-    Display *display = DefaultDisplay;
-    Window root_window = DefaultRootWindow(display);
-
-    // Get the current pointer position since RawMotionNotify doesn't include it.
-    int pointer_x_root = 0, pointer_y_root = 0;
-    Window child_window = None;
-    XQueryPointer(
-        display,            // Display
-        root_window,        // Window
-        &(Window){0},       // Root (Unused)
-        &child_window,      // Child
-        &pointer_x_root,    // Pointer X (Relative to root)
-        &pointer_y_root,    // Pointer Y (Relative to root)
-        &(int){0},          // Window X (Unused)
-        &(int){0},          // Window Y (Unused)
-        &(unsigned int){0}  // Mask (Unused)
-    );
-
-    // Handle active dragging.
-    if (is_dragging)
-    {
-        Time current_time = x_get_current_time();
-        update_dragging_portal(pointer_x_root, pointer_y_root, current_time);
-        return;
-    }
-
-    // Handle hover cursor for frame/title bar area.
-    Portal *portal = find_portal_by_window(child_window);
-    bool in_frame_area = false;
-
-    if (portal != NULL && is_portal_frame_valid(portal))
-    {
-        int rel_x = pointer_x_root - portal->geometry.x_root;
-        int rel_y = pointer_y_root - portal->geometry.y_root;
-
-        // Only show frame cursor if not in resize area (resize takes priority).
-        if (!is_portal_resize_area(portal, rel_x, rel_y) &&
-            is_portal_frame_area(portal, rel_x, rel_y))
-        {
-            in_frame_area = true;
-        }
-    }
-
-    // Use markers - add_marker is safe to call repeatedly (no-op if exists),
-    // remove_marker is safe to call if not exists.
-    if (in_frame_area)
-    {
-        add_marker(common.string_to_id("hover_frame"), XC_hand2, false);
-    }
-    else
-    {
-        remove_marker(common.string_to_id("hover_frame"));
-    }
 }
 
 HANDLE(PortalDestroyed)

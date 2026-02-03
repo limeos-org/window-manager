@@ -12,7 +12,6 @@ static PortalRegistry registry = {
     .active_count = 0
 };
 
-// Tracks the top portal to skip redundant raise_portal calls.
 static Portal *top_portal = NULL;
 
 Portal *create_portal(Window client_window)
