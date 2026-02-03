@@ -4,16 +4,13 @@ static int shortcut_input[MAX_SHORTCUT_KEYS] = {0};
 
 static void add_key_to_shortcut_input(int key)
 {
-    // Ensure the shortcut_input array is not full.
-    if (shortcut_input[MAX_SHORTCUT_KEYS - 1] != 0) return;
-
-    // Add the key to the shortcut_input array.
+    // Find an empty slot and add the key.
     for (int i = 0; i < MAX_SHORTCUT_KEYS; i++)
     {
         if (shortcut_input[i] == 0)
         {
             shortcut_input[i] = key;
-            break;
+            return;
         }
     }
 }
@@ -100,5 +97,12 @@ HANDLE(RawKeyRelease)
 
     if (!shortcut_input_contains_key(key)) return;
     remove_key_from_shortcut_input(key);
+
+    // Clear stale non-modifier keys when a modifier is released.
+    // This protects against missed release events for non-modifier keys.
+    if (x_keysym_to_modifier(key) != 0)
+    {
+        clear_shortcut_input_keys();
+    }
 }
 
