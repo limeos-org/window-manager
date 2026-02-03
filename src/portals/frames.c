@@ -176,16 +176,15 @@ bool is_portal_frame_area(Portal *portal, int rel_x, int rel_y)
 
 HANDLE(ThemeChanged)
 {
-    // Retrieve all portals from the registry.
-    unsigned int count;
-    Portal *portals = get_unsorted_portals(&count);
-
     // Redraw each portal's frame.
+    unsigned int count;
+    Portal **portals = get_sorted_portals(&count);
     for (unsigned int i = 0; i < count; i++)
     {
-        if (is_portal_frame_valid(&portals[i]))
+        if (portals[i] == NULL) continue;
+        if (is_portal_frame_valid(portals[i]))
         {
-            draw_portal_frame(&portals[i]);
+            draw_portal_frame(portals[i]);
         }
     }
 }

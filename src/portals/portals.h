@@ -16,6 +16,9 @@
 /** The minimum height of a portal in pixels. */
 #define MINIMUM_PORTAL_HEIGHT 64
 
+/** The maximum number of portals that can be managed simultaneously. */
+#define MAX_PORTALS 256
+
 /** A geometry rectangle with root-relative position and dimensions. */
 typedef struct {
     int x_root, y_root;
@@ -27,20 +30,21 @@ typedef struct {
  * client content area, along with its geometry and rendering state.
  */
 typedef struct {
+    bool active;                     // Whether this registry slot is in use.
     char *title;
-    bool initialized;
-    bool top_level;
+    bool initialized;                // Whether first-time setup has completed.
+    bool top_level;                  // Whether this portal is a child of root.
     bool mapped;
-    bool override_redirect;
+    bool override_redirect;          // Whether client manages its own geometry.
     bool fullscreen;
-    int workspace;
+    int workspace;                   // -1 if unassigned.
     PortalGeometry geometry;
-    PortalGeometry geometry_backup;
+    PortalGeometry geometry_backup;  // Saved for fullscreen restore.
     Window frame_window;
     cairo_t *frame_cr;
     Visual *frame_visual;
     Window client_window;
-    Atom client_window_type;
+    Atom client_window_type;         // The _NET_WM_WINDOW_TYPE of the client.
     Visual *client_visual;
 } Portal;
 
@@ -136,18 +140,23 @@ int get_portal_index(Portal *portal);
 /**
  * Retrieves the unsorted array of portals from the registry.
  *
- * @param out_count Pointer to store the number of portals.
+ * Returns a fixed-size array with inactive slots scattered throughout
+ * (tombstone pattern). Caller must iterate up to MAX_PORTALS and skip
+ * entries where portal->active is false.
  *
- * @return The unsorted portal array.
+ * @return The unsorted portal array (Portal[MAX_PORTALS]).
  */
-Portal *get_unsorted_portals(unsigned int *out_count);
+Portal *get_unsorted_portals();
 
 /**
  * Retrieves the sorted array of portal pointers from the registry.
  *
- * Portals are sorted by stacking order (bottom to top).
+ * Unlike get_unsorted_portals(), this returns a packed array of pointers
+ * to active portals only, sorted by stacking order (bottom to top).
+ * The array is rebuilt on each stacking change, so no active checks needed.
+ * Entries beyond out_count may be NULL.
  *
- * @param out_count Pointer to store the number of portals.
+ * @param out_count Pointer to store the number of active portals.
  *
  * @return The sorted portal pointer array.
  */

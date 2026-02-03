@@ -1,17 +1,15 @@
 #include "../all.h"
 
 typedef struct {
-    Portal *unsorted;
-    Portal **sorted;
-    unsigned int count;
-    unsigned int capacity;
+    Portal unsorted[MAX_PORTALS];
+    Portal *sorted[MAX_PORTALS];
+    unsigned int active_count;
 } PortalRegistry;
 
 static PortalRegistry registry = {
-    .unsorted = NULL,
-    .sorted = NULL,
-    .count = 0,
-    .capacity = 0
+    .unsorted = {{.active = false}},
+    .sorted = {NULL},
+    .active_count = 0
 };
 
 // Tracks the top portal to skip redundant raise_portal calls.
@@ -22,32 +20,20 @@ Portal *create_portal(Window client_window)
     // Choose which client window events we should listen for.
     XSelectInput(DefaultDisplay, client_window, SubstructureNotifyMask);
 
-    // Increase the portal count.
-    registry.count++;
-
-    // Allocate additional memory, if neccessary.
-    if (registry.count > registry.capacity)
+    // Find the first inactive slot in the registry.
+    int slot = -1;
+    for (int i = 0; i < MAX_PORTALS; i++)
     {
-        // Calculate the new capacity.
-        registry.capacity = registry.capacity == 0 ? 2 : registry.capacity * 2;
-
-        // Reallocate memory for the unsorted portals array.
-        Portal *new_unsorted = realloc(registry.unsorted, registry.capacity * sizeof(Portal));
-        if (new_unsorted == NULL) {
-            LOG_ERROR("Could not register portal, memory allocation failed.");
-            registry.count--;
-            return NULL;
+        if (!registry.unsorted[i].active)
+        {
+            slot = i;
+            break;
         }
-        registry.unsorted = new_unsorted;
-
-        // Reallocate memory for the sorted portals array.
-        Portal **new_sorted = realloc(registry.sorted, registry.capacity * sizeof(Portal *));
-        if (new_sorted == NULL) {
-            LOG_ERROR("Could not register portal, memory allocation failed.");
-            registry.count--;
-            return NULL;
-        }
-        registry.sorted = new_sorted;
+    }
+    if (slot == -1)
+    {
+        LOG_ERROR("Could not register portal, maximum portal count reached.");
+        return NULL;
     }
 
     // Allocate memory for the portal title.
@@ -55,12 +41,12 @@ Portal *create_portal(Window client_window)
     if (title == NULL)
     {
         LOG_ERROR("Could not register portal, memory allocation failed.");
-        registry.count--;
         return NULL;
     }
 
     // Add the portal to the registry.
-    registry.unsorted[registry.count - 1] = (Portal){
+    registry.unsorted[slot] = (Portal){
+        .active = true,
         .title = title,
         .client_window_type = None,
         .initialized = false,
@@ -78,7 +64,10 @@ Portal *create_portal(Window client_window)
     };
 
     // Store the portal in a variable for easier access.
-    Portal *portal = &registry.unsorted[registry.count - 1];
+    Portal *portal = &registry.unsorted[slot];
+
+    // Increment active count.
+    registry.active_count++;
 
     sort_portals();
 
@@ -117,31 +106,15 @@ void destroy_portal(Portal *portal)
         .portal = portal
     });
 
-    // Unregister the portal.
-    {
-        // Get the index of the portal in the registry.
-        int index = get_portal_index(portal);
-        if (index == -1)
-        {
-            LOG_ERROR(
-                "Could not unregister portal (%p), portal not found in registry.",
-                (void*)portal
-            );
-            return;
-        }
+    // Free the allocated memory for the title.
+    free(portal->title);
+    portal->title = NULL;
 
-        // Free the allocated memory for the title.
-        free(registry.unsorted[index].title);
+    // Mark the portal slot as inactive (tombstone).
+    portal->active = false;
 
-        // Overwrite target portal by shifting all subsequent portals.
-        for (int i = index; i < (int)registry.count - 1; i++)
-        {
-            registry.unsorted[i] = registry.unsorted[i + 1];
-        }
-
-        // Decrease the portal count.
-        registry.count--;
-    }
+    // Decrease the active count.
+    registry.active_count--;
 
     // Re-sort the portals.
     sort_portals();
@@ -252,6 +225,7 @@ void sort_portals()
         // Ensure the window belongs to a portal.
         Portal *portal = find_portal_by_window(windows[i]);
         if (portal == NULL) continue;
+        if (!portal->active) continue;
 
         // Ensure we only handle client windows, and not frame windows as well,
         // preventing duplicate entries in the sorted portals array.
@@ -263,7 +237,7 @@ void sort_portals()
     }
 
     // Clear remaining slots, if any.
-    while (portals_added < (int)registry.count) {
+    while (portals_added < MAX_PORTALS) {
         registry.sorted[portals_added] = NULL;
         portals_added++;
     }
@@ -743,9 +717,9 @@ void unmap_portal(Portal *portal)
 
 int get_portal_index(Portal *portal)
 {
-    for (int i = 0; i < (int)registry.count; i++)
+    for (int i = 0; i < MAX_PORTALS; i++)
     {
-        if (&registry.unsorted[i] == portal)
+        if (&registry.unsorted[i] == portal && registry.unsorted[i].active)
         {
             return i;
         }
@@ -753,15 +727,14 @@ int get_portal_index(Portal *portal)
     return -1;
 }
 
-Portal *get_unsorted_portals(unsigned int *out_count)
+Portal *get_unsorted_portals()
 {
-    *out_count = registry.count;
     return registry.unsorted;
 }
 
 Portal **get_sorted_portals(unsigned int *out_count)
 {
-    *out_count = registry.count;
+    *out_count = registry.active_count;
     return registry.sorted;
 }
 
@@ -769,12 +742,10 @@ Portal *find_portal_by_window(Window window)
 {
     // Iterate over the unsorted portals to find the portal associated with
     // the specified window.
-    for (int i = 0; i < (int)registry.count; i++)
+    for (int i = 0; i < MAX_PORTALS; i++)
     {
         Portal *portal = &registry.unsorted[i];
-
-        // Skip invalid portals.
-        if (portal == NULL) continue;
+        if (!portal->active) continue;
 
         // Check if the portal is associated with the specified window.
         if (portal->frame_window == window ||
@@ -790,12 +761,13 @@ Portal *find_portal_at_pos(int x_root, int y_root)
 {
     // Iterate over the sorted portals in reverse order, to find the topmost
     // portal at the specified position.
-    for (int i = registry.count - 1; i >= 0; i--)
+    for (int i = MAX_PORTALS - 1; i >= 0; i--)
     {
         Portal *portal = registry.sorted[i];
 
         // Skip invalid portals.
         if (portal == NULL) continue;
+        if (!portal->active) continue;
         if (portal->initialized == false) continue;
         if (portal->mapped == false) continue;
 

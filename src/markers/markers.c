@@ -10,19 +10,28 @@
 
 #include "../all.h"
 
+/** The maximum number of markers that can be managed simultaneously. */
+#define MAX_MARKERS 32
+
 typedef struct {
+    bool active;           // Whether this slot is in use.
     unsigned int id;
+    unsigned int sequence; // Insertion order for finding the top marker.
     Cursor cursor;
-    bool grab;
+    bool grab;             // Whether to prevent pointer events passing through.
 } Marker;
 
 typedef struct {
-    Marker *items;
-    int size;
-    int capacity;
+    Marker items[MAX_MARKERS];
+    unsigned int active_count;
+    unsigned int next_sequence; // Counter for assigning sequence to new markers.
 } MarkerDeck;
 
-static MarkerDeck marker_deck;
+static MarkerDeck marker_deck = {
+    .items = {{.active = false}},
+    .active_count = 0,
+    .next_sequence = 0
+};
 
 static void show_marker(Marker *marker)
 {
@@ -54,18 +63,31 @@ static void show_marker(Marker *marker)
     }
 }
 
-static Marker* find_marker(unsigned int id, int *out_index)
+static Marker* find_marker(unsigned int id)
 {
-    for (int i = 0; i < marker_deck.size; i++)
+    for (int i = 0; i < MAX_MARKERS; i++)
     {
+        if (!marker_deck.items[i].active) continue;
         if (marker_deck.items[i].id == id)
         {
-            if (out_index != NULL) *out_index = i;
             return &marker_deck.items[i];
         }
     }
-    if (out_index != NULL) *out_index = -1;
     return NULL;
+}
+
+static Marker* find_top_marker()
+{
+    Marker *top = NULL;
+    for (int i = 0; i < MAX_MARKERS; i++)
+    {
+        if (!marker_deck.items[i].active) continue;
+        if (top == NULL || marker_deck.items[i].sequence > top->sequence)
+        {
+            top = &marker_deck.items[i];
+        }
+    }
+    return top;
 }
 
 void add_marker(unsigned int id, unsigned int shape, bool grab)
@@ -73,69 +95,63 @@ void add_marker(unsigned int id, unsigned int shape, bool grab)
     Display *display = DefaultDisplay;
 
     // Ensure the marker isn't already in the deck.
-    if (find_marker(id, NULL) != NULL) return;
+    if (find_marker(id) != NULL) return;
 
-    // Increase the capacity of the marker deck if necessary.
-    if (marker_deck.size >= marker_deck.capacity)
+    // Find the first inactive slot.
+    int slot = -1;
+    for (int i = 0; i < MAX_MARKERS; i++)
     {
-        int new_capacity = marker_deck.capacity * 2;
-        Marker *new_items = realloc(marker_deck.items, new_capacity * sizeof(Marker));
-        if (new_items == NULL)
+        if (!marker_deck.items[i].active)
         {
-            LOG_ERROR("Could not add marker, memory allocation failed.");
-            return;
+            slot = i;
+            break;
         }
-        marker_deck.capacity = new_capacity;
-        marker_deck.items = new_items;
+    }
+    if (slot == -1)
+    {
+        LOG_ERROR("Could not add marker, maximum marker count reached.");
+        return;
     }
 
     // Add the marker to the deck.
-    marker_deck.items[marker_deck.size].id = id;
-    marker_deck.items[marker_deck.size].cursor = XCreateFontCursor(display, shape);
-    marker_deck.items[marker_deck.size].grab = grab;
-    marker_deck.size++;
+    marker_deck.items[slot] = (Marker){
+        .active = true,
+        .id = id,
+        .sequence = marker_deck.next_sequence++,
+        .cursor = XCreateFontCursor(display, shape),
+        .grab = grab
+    };
+    marker_deck.active_count++;
 
     // Show the marker.
-    show_marker(&marker_deck.items[marker_deck.size - 1]);
+    show_marker(&marker_deck.items[slot]);
 }
 
 void remove_marker(unsigned int id)
 {
     Display *display = DefaultDisplay;
 
-    // Ensure the marker is in in the deck.
-    int index = -1;
-    if (find_marker(id, &index) == NULL) return;
+    // Ensure the marker is in the deck.
+    Marker *marker = find_marker(id);
+    if (marker == NULL) return;
 
-    // Free the cursor of the target marker.
-    XFreeCursor(display, marker_deck.items[index].cursor);
+    // Free the cursor.
+    XFreeCursor(display, marker->cursor);
 
-    // Shift markers left to overwrite the target marker.
-    for (int j = index; j < marker_deck.size - 1; j++)
+    // Mark the slot as inactive (tombstone).
+    marker->active = false;
+    marker_deck.active_count--;
+
+    // Show the new top marker, if any remain.
+    Marker *top = find_top_marker();
+    if (top != NULL)
     {
-        marker_deck.items[j] = marker_deck.items[j + 1];
-    }
-    marker_deck.size--;
-
-    // Show the last marker in the deck.
-    if (marker_deck.size > 0)
-    {
-        show_marker(&marker_deck.items[marker_deck.size - 1]);
+        show_marker(top);
     }
 }
 
 HANDLE(Initialize)
 {
-    // Initialize the marker deck.
-    marker_deck.size = 0;
-    marker_deck.capacity = 10;
-    marker_deck.items = malloc(marker_deck.capacity * sizeof(Marker));
-    if (marker_deck.items == NULL)
-    {
-        LOG_ERROR("Could not initialize marker deck, memory allocation failed.");
-        return;
-    }
-
     // Add the default marker.
     add_marker(common.string_to_id("default"), XC_left_ptr, false);
 }

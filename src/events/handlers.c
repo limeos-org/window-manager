@@ -19,27 +19,26 @@ static EventHandlers event_handlers = {
 
 void register_event_handler(int type, EventCallback *callback)
 {
-    // Increase the event handlers count.
-    event_handlers.count++;
-
     // Allocate additional memory for the event handlers if necessary.
-    if (event_handlers.count > event_handlers.capacity)
+    if (event_handlers.count >= event_handlers.capacity)
     {
-        event_handlers.capacity = event_handlers.capacity == 0 ? 2 : event_handlers.capacity * 2;
-        EventHandler *handlers = realloc(event_handlers.handlers, event_handlers.capacity * sizeof(EventHandler));
+        int new_capacity = event_handlers.capacity == 0 ? 2 : event_handlers.capacity * 2;
+        EventHandler *handlers = realloc(event_handlers.handlers, new_capacity * sizeof(EventHandler));
         if (handlers == NULL)
         {
             LOG_ERROR("Failed to allocate memory for event handlers.");
             exit(EXIT_FAILURE);
         }
         event_handlers.handlers = handlers;
+        event_handlers.capacity = new_capacity;
     }
 
     // Register the event handler.
-    event_handlers.handlers[event_handlers.count - 1] = (EventHandler){
+    event_handlers.handlers[event_handlers.count] = (EventHandler){
         .type = type,
         .callback = callback,
     };
+    event_handlers.count++;
 }
 
 void call_event_handlers(Event *event)

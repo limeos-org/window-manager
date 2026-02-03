@@ -14,30 +14,26 @@ static void update_ewmh_client_list(Portal *exclude)
     Display *display = DefaultDisplay;
     Window root_window = DefaultRootWindow(display);
 
-    // Retrieve all portals.
-    unsigned int portal_count = 0;
-    Portal *portals = get_unsorted_portals(&portal_count);
-
-    // Allocate memory for the client list, the size being the largest possible
-    // number of top-level client windows.
-    Window *client_list = malloc(portal_count * sizeof(Window));
+    // Allocate memory for the client list.
+    Window *client_list = malloc(MAX_PORTALS * sizeof(Window));
     if (client_list == NULL)
     {
         LOG_ERROR("Could not update EWMH client list, memory allocation failed.");
         return;
     }
 
-    // Populate the client list with client windows that belong to portals
-    // that are initialized and top-level.
+    // Build the client list from valid, initialized, top-level portals.
+    // Per EWMH spec, _NET_CLIENT_LIST contains only top-level application
+    // windows (for taskbars/switchers), excluding popups, tooltips, etc.
+    Portal *portals = get_unsorted_portals();
     int clients_added = 0;
-    for (int i = 0; i < (int)portal_count; i++)
+    for (int i = 0; i < MAX_PORTALS; i++)
     {
         Portal *portal = &portals[i];
-
-        if (portal == NULL) continue;
+        if (!portal->active) continue;
         if (portal == exclude) continue;
-        if (portal->initialized == false) continue;
-        if (portal->top_level == false) continue;
+        if (!portal->initialized) continue;
+        if (!portal->top_level) continue;
 
         client_list[clients_added] = portal->client_window;
         clients_added++;

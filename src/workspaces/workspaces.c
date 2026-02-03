@@ -77,30 +77,25 @@ void switch_workspace(int workspace)
     int old_workspace = current_workspace;
     current_workspace = workspace;
 
-    // Get all portals and update visibility.
-    unsigned int count = 0;
-    Portal *portals = get_unsorted_portals(&count);
-    for (unsigned int i = 0; i < count; i++)
+    // Update portal visibility based on workspace assignment.
+    Portal *portals = get_unsorted_portals();
+    for (unsigned int i = 0; i < MAX_PORTALS; i++)
     {
         Portal *portal = &portals[i];
 
-        // Skip uninitialized portals.
+        // Skip inactive slots, uninitialized portals, override-redirect windows
+        // (they manage themselves), and unassigned portals (workspace < 0).
+        if (!portal->active) continue;
         if (!portal->initialized) continue;
-
-        // Skip override-redirect windows (they manage themselves).
         if (portal->override_redirect) continue;
-
-        // Skip unassigned portals.
         if (portal->workspace < 0) continue;
 
         if (portal->workspace == old_workspace)
         {
-            // Unmap portals from the old workspace.
             unmap_portal(portal);
         }
         else if (portal->workspace == workspace)
         {
-            // Map portals on the new workspace.
             map_portal(portal);
         }
     }
