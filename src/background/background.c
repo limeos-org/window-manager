@@ -15,6 +15,7 @@ static cairo_surface_t *load_background_image(Display *display, const char *file
     if (cairo_surface_status(original_image) != CAIRO_STATUS_SUCCESS)
     {
         LOG_ERROR("Failed to load background image (%s).", filename);
+        cairo_surface_destroy(original_image);
         return NULL;
     }
 
@@ -76,6 +77,11 @@ HANDLE(Initialize)
     int screen_width = DisplayWidth(display, screen);
     int screen_height = DisplayHeight(display, screen);
     xlib_surface = cairo_xlib_surface_create(display, root_window, DefaultVisual(display, screen), screen_width, screen_height);
+    if (cairo_surface_status(xlib_surface) != CAIRO_STATUS_SUCCESS)
+    {
+        LOG_ERROR("Failed to create xlib surface for background.");
+        return;
+    }
 
     // Prepare png surface if neccessary.
     if (strcmp(cfg_background_mode, "image") == 0)
