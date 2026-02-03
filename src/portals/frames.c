@@ -133,6 +133,27 @@ void draw_portal_frame(Portal *portal)
     cairo_close_path(cr);
     cairo_fill(cr);
 
+    // Draw focus indicator: filled if focused, outlined if not.
+    cairo_set_source_rgba(cr,
+        theme->titlebar_text.r,
+        theme->titlebar_text.g,
+        theme->titlebar_text.b,
+        0.5
+    );
+    double indicator_radius = 3.0;
+    double indicator_x = 10.0 + indicator_radius;
+    double indicator_y = PORTAL_TITLE_BAR_HEIGHT / 2.0;
+    cairo_arc(cr, indicator_x, indicator_y, indicator_radius, 0, 2 * PI);
+    if (portal == get_top_portal())
+    {
+        cairo_fill(cr);
+    }
+    else
+    {
+        cairo_set_line_width(cr, 1.0);
+        cairo_stroke(cr);
+    }
+
     // Draw title within the title bar.
     draw_portal_title(portal);
 
@@ -176,7 +197,22 @@ bool is_portal_frame_area(Portal *portal, int rel_x, int rel_y)
 
 HANDLE(ThemeChanged)
 {
-    // Redraw each portal's frame.
+    // Redraw each portal's frame to apply the new theme.
+    unsigned int count;
+    Portal **portals = get_sorted_portals(&count);
+    for (unsigned int i = 0; i < count; i++)
+    {
+        if (portals[i] == NULL) continue;
+        if (is_portal_frame_valid(portals[i]))
+        {
+            draw_portal_frame(portals[i]);
+        }
+    }
+}
+
+HANDLE(PortalFocused)
+{
+    // Redraw each portal's frame to update focus indicator.
     unsigned int count;
     Portal **portals = get_sorted_portals(&count);
     for (unsigned int i = 0; i < count; i++)
