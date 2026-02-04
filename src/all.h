@@ -49,6 +49,7 @@
 #include "ewmh/client_list.h"
 #include "ewmh/active_window.h"
 #include "ewmh/desktops.h"
+#include "ewmh/moveresize.h"
 #include "portals/portals.h"
 #include "workspaces/workspaces.h"
 #include "compositor/shadow.h"

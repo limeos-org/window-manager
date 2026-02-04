@@ -1,5 +1,3 @@
-#include "../all.h"
-
 /**
  * This code is responsible for setting up the EWMH identification chain and
  * the list of supported EWMH features on the root window. This is required by
@@ -9,6 +7,8 @@
  * https://specifications.freedesktop.org/wm-spec/1.5/ar01s03.html#id-1.4.12
  * https://specifications.freedesktop.org/wm-spec/1.5/ar01s03.html#id-1.4.3
  */
+
+#include "../all.h"
 
 static void setup_ewmh_identification_chain()
 {
@@ -84,7 +84,8 @@ static void setup_ewmh_supported_list()
         XInternAtom(display, "_NET_NUMBER_OF_DESKTOPS", False),
         XInternAtom(display, "_NET_CURRENT_DESKTOP", False),
         XInternAtom(display, "_NET_WM_DESKTOP", False),
-        XInternAtom(display, "_NET_DESKTOP_NAMES", False)
+        XInternAtom(display, "_NET_DESKTOP_NAMES", False),
+        XInternAtom(display, "_NET_CLOSE_WINDOW", False)
     };
 
     // Set the `_NET_SUPPORTED` property on the root window, listing all the

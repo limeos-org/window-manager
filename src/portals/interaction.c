@@ -39,6 +39,9 @@ HANDLE(RawButtonPress)
     // Handle focus for all button clicks.
     handle_portal_focus_click(portal);
 
+    // Skip frameless portals (CSD apps). They handle their own interactions.
+    if (!is_portal_frame_valid(portal)) return;
+
     // Only route left button clicks to interaction handlers.
     if (_event->button != Button1) return;
 
