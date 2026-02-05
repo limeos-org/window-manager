@@ -76,6 +76,22 @@ static void compositor_init()
     compositor_enabled = true;
 }
 
+static Portal *find_fullscreen_portal()
+{
+    unsigned int count = 0;
+    Portal **sorted = get_sorted_portals(&count);
+
+    for (int i = count - 1; i >= 0; i--)
+    {
+        Portal *portal = sorted[i];
+        if (portal != NULL && portal->fullscreen && portal->mapped)
+        {
+            return portal;
+        }
+    }
+    return NULL;
+}
+
 static void draw_fullscreen_portal(Portal *portal)
 {
     if (!compositor_enabled) return;
@@ -190,11 +206,36 @@ static void draw_portal(Portal *portal)
         return;
     }
 
-    // Draw the window surface to the off-screen buffer.
-    if (has_frame)
+    // Draw the window surface to the off-screen buffer based on decoration kind.
+    DecorationKind kind = get_portal_decoration_kind(portal);
+    if (kind == DECORATION_FRAMED || kind == DECORATION_FRAMELESS)
     {
+        // Select decoration parameters based on kind.
+        int shadow_layers;
+        double shadow_spread, shadow_opacity, corner_radius;
+        void (*draw_border)(cairo_t *, Portal *, Pixmap);
+        if (kind == DECORATION_FRAMED)
+        {
+            shadow_layers = 4;
+            shadow_spread = 20;
+            shadow_opacity = 0.1;
+            corner_radius = PORTAL_CORNER_RADIUS;
+            draw_border = draw_framed_border;
+        }
+        else
+        {
+            shadow_layers = 3;
+            shadow_spread = 12;
+            shadow_opacity = 0.08;
+            corner_radius = PORTAL_FRAMELESS_CORNER_RADIUS;
+            draw_border = draw_frameless_border;
+        }
+
         // Draw drop shadow.
-        draw_portal_shadow(buffer_cr, portal);
+        draw_shadow(
+            buffer_cr, portal, shadow_layers,
+            shadow_spread, shadow_opacity, corner_radius
+        );
 
         // Clip to rounded corners and paint portal content.
         cairo_save(buffer_cr);
@@ -204,7 +245,7 @@ static void draw_portal(Portal *portal)
             portal->geometry.y_root,
             portal->geometry.width,
             portal->geometry.height,
-            PORTAL_CORNER_RADIUS
+            corner_radius
         );
         cairo_clip(buffer_cr);
         cairo_set_source_surface(
@@ -216,12 +257,12 @@ static void draw_portal(Portal *portal)
         cairo_paint(buffer_cr);
         cairo_restore(buffer_cr);
 
-        // Draw borders (includes luminance sampling).
-        draw_portal_border(buffer_cr, portal, pixmap);
+        // Draw border.
+        draw_border(buffer_cr, portal, pixmap);
     }
     else
     {
-        // No frame, just paint the window content directly.
+        // Paint the window content directly.
         cairo_set_source_surface(
             buffer_cr,
             window_surface,
@@ -237,22 +278,6 @@ static void draw_portal(Portal *portal)
     // Cleanup.
     cairo_surface_destroy(window_surface);
     XFreePixmap(display, pixmap);
-}
-
-static Portal *find_fullscreen_portal()
-{
-    unsigned int count = 0;
-    Portal **sorted = get_sorted_portals(&count);
-
-    for (int i = count - 1; i >= 0; i--)
-    {
-        Portal *portal = sorted[i];
-        if (portal != NULL && portal->fullscreen && portal->mapped)
-        {
-            return portal;
-        }
-    }
-    return NULL;
 }
 
 static void compositor_redraw()

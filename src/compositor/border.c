@@ -8,52 +8,23 @@
 #include "../all.h"
 
 /**
- * Samples the client area of a portal to determine content luminance.
+ * Samples pixel luminance at the given points from a pixmap.
  *
  * @param display The X display connection.
  * @param pixmap The window pixmap to sample from.
- * @param portal The portal containing geometry information.
+ * @param points Array of [x, y] coordinate pairs to sample.
+ * @param num_points The number of points to sample.
  *
  * @return Luminance value from 0.0 (dark) to 1.0 (light).
  */
-static float sample_client_luminance(Display *display, Pixmap pixmap, Portal *portal)
-{
-    // Calculate client area bounds within the frame.
-    int client_x = PORTAL_BORDER_WIDTH;
-    int client_y = PORTAL_TITLE_BAR_HEIGHT;
-    int client_width = portal->geometry.width - 2 * PORTAL_BORDER_WIDTH;
-    int client_height = portal->geometry.height - PORTAL_TITLE_BAR_HEIGHT - PORTAL_BORDER_WIDTH;
-
-    // Ensure client area is valid.
-    if (client_width <= 0 || client_height <= 0)
-    {
-        return 0.0f;
-    }
-
-    // Define sample points within the client area.
-    int margin = 10;
-    int sample_points[][2] = {
-        { client_x + client_width / 2, client_y + client_height / 2 },           // Center
-        { client_x + margin, client_y + margin },                                // Top-left
-        { client_x + client_width - margin, client_y + margin },                 // Top-right
-        { client_x + margin, client_y + client_height - margin },                // Bottom-left
-        { client_x + client_width - margin, client_y + client_height - margin }, // Bottom-right
-    };
-    int num_samples = sizeof(sample_points) / sizeof(sample_points[0]);
-
+static float sample_luminance(Display *display, Pixmap pixmap, int points[][2], int num_points) {
     // Sample pixels and calculate average luminance.
     double total_luminance = 0.0;
     int valid_samples = 0;
-    for (int i = 0; i < num_samples; i++)
+    for (int i = 0; i < num_points; i++)
     {
-        int x = sample_points[i][0];
-        int y = sample_points[i][1];
-
-        // Clamp to valid coordinates.
-        if (x < client_x) x = client_x;
-        if (x >= client_x + client_width) x = client_x + client_width - 1;
-        if (y < client_y) y = client_y;
-        if (y >= client_y + client_height) y = client_y + client_height - 1;
+        int x = points[i][0];
+        int y = points[i][1];
 
         // Get single pixel.
         XImage *img = XGetImage(display, pixmap, x, y, 1, 1, AllPlanes, ZPixmap);
@@ -85,7 +56,7 @@ static float sample_client_luminance(Display *display, Pixmap pixmap, Portal *po
     return (float)(total_luminance / valid_samples);
 }
 
-void draw_portal_border(cairo_t *cr, Portal *portal, Pixmap pixmap)
+void draw_framed_border(cairo_t *cr, Portal *portal, Pixmap pixmap)
 {
     Display *display = DefaultDisplay;
     const Theme *theme = get_current_theme();
@@ -97,8 +68,33 @@ void draw_portal_border(cairo_t *cr, Portal *portal, Pixmap pixmap)
     double radius = PORTAL_CORNER_RADIUS;
     double title_height = PORTAL_TITLE_BAR_HEIGHT;
 
-    // Sample luminance to determine border colors.
-    float luminance = sample_client_luminance(display, pixmap, portal);
+    // Sample the client area below the titlebar to determine
+    // border color that contrasts with the adjacent content.
+    int cx = PORTAL_BORDER_WIDTH;
+    int cy = PORTAL_TITLE_BAR_HEIGHT;
+    int cw = portal->geometry.width - 2 * PORTAL_BORDER_WIDTH;
+    int ch = portal->geometry.height - PORTAL_TITLE_BAR_HEIGHT - PORTAL_BORDER_WIDTH;
+    float luminance = 0.0f;
+    if (cw > 0 && ch > 0)
+    {
+        int margin = 10;
+        int points[][2] = {
+            { cx + cw / 2, cy + ch / 2 },
+            { cx + margin, cy + margin },
+            { cx + cw - margin, cy + margin },
+            { cx + margin, cy + ch - margin },
+            { cx + cw - margin, cy + ch - margin },
+        };
+        int n = sizeof(points) / sizeof(points[0]);
+        for (int i = 0; i < n; i++)
+        {
+            if (points[i][0] < cx) points[i][0] = cx;
+            if (points[i][0] >= cx + cw) points[i][0] = cx + cw - 1;
+            if (points[i][1] < cy) points[i][1] = cy;
+            if (points[i][1] >= cy + ch) points[i][1] = cy + ch - 1;
+        }
+        luminance = sample_luminance(display, pixmap, points, n);
+    }
 
     // Draw inner border around title bar.
     cairo_set_source_rgba(cr,
@@ -140,5 +136,66 @@ void draw_portal_border(cairo_t *cr, Portal *portal, Pixmap pixmap)
     cairo_set_line_width(cr, 1);
     cairo_move_to(cr, x, y + title_height - 0.5);
     cairo_line_to(cr, x + width, y + title_height - 0.5);
+    cairo_stroke(cr);
+}
+
+void draw_frameless_border(cairo_t *cr, Portal *portal, Pixmap pixmap)
+{
+    Display *display = DefaultDisplay;
+    const Theme *theme = get_current_theme();
+
+    double x = portal->geometry.x_root;
+    double y = portal->geometry.y_root;
+    double width = portal->geometry.width;
+    double height = portal->geometry.height;
+    double radius = PORTAL_FRAMELESS_CORNER_RADIUS;
+
+    // Sample broadly across the full window area since frameless
+    // windows have no titlebar, so the border surrounds all content.
+    int w = portal->geometry.width;
+    int h = portal->geometry.height;
+    float luminance = 0.0f;
+    if (w > 0 && h > 0)
+    {
+        int margin = 10;
+        int points[][2] = {
+            { w / 2, h / 2 },
+            { margin, margin },
+            { w - margin, margin },
+            { margin, h - margin },
+            { w - margin, h - margin },
+        };
+        int n = sizeof(points) / sizeof(points[0]);
+        for (int i = 0; i < n; i++)
+        {
+            if (points[i][0] < 0) points[i][0] = 0;
+            if (points[i][0] >= w) points[i][0] = w - 1;
+            if (points[i][1] < 0) points[i][1] = 0;
+            if (points[i][1] >= h) points[i][1] = h - 1;
+        }
+        luminance = sample_luminance(display, pixmap, points, n);
+    }
+
+    // Draw border: dark content = light border, light content = dark border.
+    double border_rgb = (luminance > 0.5f) ? 0.0 : 1.0;
+    cairo_set_source_rgba(cr,
+        border_rgb,
+        border_rgb,
+        border_rgb,
+        theme->titlebar_border.a
+    );
+    cairo_set_line_width(cr, 1);
+
+    // Draw full rounded rectangle border.
+    cairo_move_to(cr, x + radius + 0.5, y + 0.5);
+    cairo_line_to(cr, x + width - radius - 0.5, y + 0.5);
+    cairo_arc(cr, x + width - radius - 0.5, y + radius + 0.5, radius, -PI / 2, 0);
+    cairo_line_to(cr, x + width - 0.5, y + height - radius - 0.5);
+    cairo_arc(cr, x + width - radius - 0.5, y + height - radius - 0.5, radius, 0, PI / 2);
+    cairo_line_to(cr, x + radius + 0.5, y + height - 0.5);
+    cairo_arc(cr, x + radius + 0.5, y + height - radius - 0.5, radius, PI / 2, PI);
+    cairo_line_to(cr, x + 0.5, y + radius + 0.5);
+    cairo_arc(cr, x + radius + 0.5, y + radius + 0.5, radius, PI, 3 * PI / 2);
+    cairo_close_path(cr);
     cairo_stroke(cr);
 }

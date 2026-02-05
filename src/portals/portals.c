@@ -143,11 +143,8 @@ void initialize_portal(Portal *portal)
     // Determine whether the portal is top-level.
     portal->top_level = x_window_is_top_level(display, portal->client_window);
 
-    // Determine the window type.
-    if (portal->top_level == true)
-    {
-        portal->client_window_type = x_get_window_type(display, portal->client_window);
-    }
+    // Query the client window type (e.g. tooltip, notification, normal).
+    portal->client_window_type = x_get_window_type(display, portal->client_window);
 
     // Get the client window's geometry and visual BEFORE creating the frame.
     // This must be done while the client is still a child of root,
@@ -749,6 +746,41 @@ Portal *find_portal_by_window(Window window)
         }
     }
     return NULL;
+}
+
+DecorationKind get_portal_decoration_kind(Portal *portal)
+{
+    // Framed windows get full decorations.
+    if (is_portal_frame_valid(portal))
+    {
+        return DECORATION_FRAMED;
+    }
+
+    // Skip tooltips and notifications (not managed as separate portals).
+    Display *display = DefaultDisplay;
+    static Atom tooltip = None;
+    if (tooltip == None)
+    {
+        tooltip = XInternAtom(display, "_NET_WM_WINDOW_TYPE_TOOLTIP", False);
+    }
+    static Atom notification = None;
+    if (notification == None)
+    {
+        notification = XInternAtom(display, "_NET_WM_WINDOW_TYPE_NOTIFICATION", False);
+    }
+    if (portal->client_window_type == tooltip ||
+        portal->client_window_type == notification
+    ) {
+        return DECORATION_NONE;
+    }
+
+    // Return frameless decorations for CSD apps and override-redirect windows.
+    if (portal->top_level || portal->override_redirect)
+    {
+        return DECORATION_FRAMELESS;
+    }
+
+    return DECORATION_NONE;
 }
 
 Portal *find_portal_at_pos(int x_root, int y_root)

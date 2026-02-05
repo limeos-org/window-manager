@@ -4,12 +4,6 @@
 /** The height of the title bar in pixels. */
 #define PORTAL_TITLE_BAR_HEIGHT 26
 
-/** The width of the frame border in pixels. */
-#define PORTAL_BORDER_WIDTH 1
-
-/** The radius of the rounded corners in pixels. */
-#define PORTAL_CORNER_RADIUS 6
-
 /** The minimum width of a portal in pixels. */
 #define MINIMUM_PORTAL_WIDTH 128
 
@@ -18,6 +12,17 @@
 
 /** The maximum number of portals that can be managed simultaneously. */
 #define MAX_PORTALS 256
+
+/** Decoration kinds for portals. */
+typedef enum
+{
+    /** No decorations applied. */
+    DECORATION_NONE,
+    /** Shadow and border for portals without a titlebar. */
+    DECORATION_FRAMELESS,
+    /** Shadow and border for portals with a titlebar. */
+    DECORATION_FRAMED
+} DecorationKind;
 
 /** A geometry rectangle with root-relative position and dimensions. */
 typedef struct {
@@ -182,3 +187,16 @@ Portal *find_portal_by_window(Window window);
  * @return - `NULL` The portal could not be found.
  */
 Portal *find_portal_at_pos(int x_root, int y_root);
+
+/**
+ * Determines the decoration kind for a portal.
+ *
+ * @param portal The portal to check.
+ *
+ * @return - `DECORATION_FRAMED` The portal has a WM frame.
+ * @return - `DECORATION_FRAMELESS` The portal is a CSD or
+ * override-redirect window.
+ *
+ * @return - `DECORATION_NONE` The portal should not be decorated.
+ */
+DecorationKind get_portal_decoration_kind(Portal *portal);

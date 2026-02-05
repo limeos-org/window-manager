@@ -111,8 +111,6 @@ void draw_portal_frame(Portal *portal)
     cairo_t *cr = portal->frame_cr;
     unsigned int width = portal->geometry.width;
     unsigned int height = portal->geometry.height;
-    double radius = PORTAL_CORNER_RADIUS;
-
     // Resize the Cairo surface.
     cairo_xlib_surface_set_size(cairo_get_target(cr), width, height);
 
@@ -121,16 +119,10 @@ void draw_portal_frame(Portal *portal)
     cairo_paint(cr);
     cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 
-    // Draw title bar with rounded top corners.
+    // Draw title bar. Corner rounding is handled by the compositor's
+    // clip path, so a plain rectangle is sufficient here.
     cairo_set_source_rgb(cr, theme->titlebar_bg.r, theme->titlebar_bg.g, theme->titlebar_bg.b);
-    cairo_move_to(cr, radius, 0);
-    cairo_line_to(cr, width - radius, 0);
-    cairo_arc(cr, width - radius, radius, radius, -PI / 2, 0);
-    cairo_line_to(cr, width, PORTAL_TITLE_BAR_HEIGHT);
-    cairo_line_to(cr, 0, PORTAL_TITLE_BAR_HEIGHT);
-    cairo_line_to(cr, 0, radius);
-    cairo_arc(cr, radius, radius, radius, PI, 3 * PI / 2);
-    cairo_close_path(cr);
+    cairo_rectangle(cr, 0, 0, width, PORTAL_TITLE_BAR_HEIGHT);
     cairo_fill(cr);
 
     // Draw focus indicator: filled if focused, outlined if not.
