@@ -189,6 +189,7 @@ HANDLE(ConfigureNotify)
         // Move back only if the position is incorrect.
         if (_event->x != 0 || _event->y != PORTAL_TITLE_BAR_HEIGHT)
         {
+            portal->misaligned = true;
             XMoveWindow(display, portal->client_window, 0, PORTAL_TITLE_BAR_HEIGHT);
         }
     }

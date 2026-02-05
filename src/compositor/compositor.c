@@ -10,17 +10,25 @@
 
 #include "../all.h"
 
+static bool compositor_enabled = false;
+
 static cairo_t *root_cr = NULL;
 static cairo_surface_t *root_surface = NULL;
+
 static cairo_t *buffer_cr = NULL;
 static cairo_surface_t *buffer_surface = NULL;
 static Pixmap buffer_pixmap = None;
-static bool compositor_enabled = false;
+
+/**
+ * Tracks which client windows have been composite-redirected for the purpose
+ * of split rendering misaligned framed portals. Indexed by portal index.
+ */
+static Window redirected_clients[MAX_PORTALS] = {0};
 
 static int screen_width = 0;
 static int screen_height = 0;
 
-static void compositor_init()
+static void init_compositor()
 {
     Display *display = DefaultDisplay;
     Window root_window = DefaultRootWindow(display);
@@ -92,58 +100,170 @@ static Portal *find_fullscreen_portal()
     return NULL;
 }
 
+/**
+ * Acquires a window's composite pixmap and wraps it in a Cairo surface.
+ *
+ * @param window The window to acquire.
+ * @param visual The visual for the Cairo surface.
+ * @param width The surface width.
+ * @param height The surface height.
+ * @param check_viewable Whether to verify the window is viewable.
+ * @param out_pixmap Receives the acquired pixmap on success.
+ *
+ * @return - `cairo_surface_t*` On success.
+ * @return - `NULL` If the window is not viewable or acquisition failed.
+ *
+ * @note Caller owns both the returned surface and *out_pixmap.
+ */
+static cairo_surface_t *acquire_window_surface(
+    Window window,
+    Visual *visual,
+    unsigned int width,
+    unsigned int height,
+    bool check_viewable,
+    Pixmap *out_pixmap
+)
+{
+    Display *display = DefaultDisplay;
+    *out_pixmap = None;
+
+    // Grab the server to prevent window changes during acquisition.
+    XGrabServer(display);
+
+    // Verify the window is viewable if requested.
+    if (check_viewable)
+    {
+        XWindowAttributes attrs;
+        if (!XGetWindowAttributes(display, window, &attrs)
+            || attrs.map_state != IsViewable)
+        {
+            XUngrabServer(display);
+            return NULL;
+        }
+    }
+
+    // Get the composite pixmap.
+    Pixmap pixmap = XCompositeNameWindowPixmap(display, window);
+    if (pixmap == None)
+    {
+        XUngrabServer(display);
+        return NULL;
+    }
+
+    // Release the server grab.
+    XUngrabServer(display);
+
+    // Create a Cairo surface from the pixmap.
+    cairo_surface_t *surface = cairo_xlib_surface_create(
+        display, pixmap, visual, width, height
+    );
+    if (cairo_surface_status(surface) != CAIRO_STATUS_SUCCESS)
+    {
+        cairo_surface_destroy(surface);
+        XFreePixmap(display, pixmap);
+        return NULL;
+    }
+
+    *out_pixmap = pixmap;
+    return surface;
+}
+
+/** Composites a fullscreen portal to the buffer. */
 static void draw_fullscreen_portal(Portal *portal)
 {
     if (!compositor_enabled) return;
 
-    Display *display = DefaultDisplay;
-
-    // Grab the server to prevent window destruction during pixmap operations.
-    XGrabServer(display);
-
-    // Verify the client window is viewable.
-    XWindowAttributes attrs;
-    if (!XGetWindowAttributes(display, portal->client_window, &attrs) ||
-        attrs.map_state != IsViewable)
-    {
-        XUngrabServer(display);
-        return;
-    }
-
-    // Get the client window pixmap directly (bypass frame).
-    Pixmap pixmap = XCompositeNameWindowPixmap(display, portal->client_window);
-    if (pixmap == None)
-    {
-        XUngrabServer(display);
-        return;
-    }
-
-    // Release the server grab now that we have the pixmap.
-    XUngrabServer(display);
-
-    // Create surface with screen dimensions.
-    cairo_surface_t *window_surface = cairo_xlib_surface_create(
-        display,
-        pixmap,
-        portal->client_visual,
-        screen_width,
-        screen_height
+    // Acquire the client pixmap directly (bypass frame).
+    Pixmap pixmap;
+    cairo_surface_t *surface = acquire_window_surface(
+        portal->client_window, portal->client_visual,
+        screen_width, screen_height, true, &pixmap
     );
-    if (cairo_surface_status(window_surface) != CAIRO_STATUS_SUCCESS)
-    {
-        cairo_surface_destroy(window_surface);
-        XFreePixmap(display, pixmap);
-        return;
-    }
+    if (surface == NULL) return;
 
     // Draw at (0,0) covering the entire screen.
-    cairo_set_source_surface(buffer_cr, window_surface, 0, 0);
+    cairo_set_source_surface(buffer_cr, surface, 0, 0);
     cairo_paint(buffer_cr);
 
     // Release Cairo surface and free the pixmap.
     cairo_set_source_rgb(buffer_cr, 0, 0, 0);
-    cairo_surface_destroy(window_surface);
-    XFreePixmap(display, pixmap);
+    cairo_surface_destroy(surface);
+    XFreePixmap(DefaultDisplay, pixmap);
+}
+
+/**
+ * Renders a misaligned framed portal's content, avoiding
+ * position flash from stale client offset in the frame.
+ */
+static void draw_split_content(
+    Portal *portal,
+    cairo_surface_t *frame_surface
+)
+{
+    Display *display = DefaultDisplay;
+
+    // Ensure client has its own composite pixmap.
+    int portal_index = get_portal_index(portal);
+    if (portal_index >= 0
+        && redirected_clients[portal_index]
+            != portal->client_window)
+    {
+        XCompositeRedirectWindow(
+            display,
+            portal->client_window,
+            CompositeRedirectAutomatic
+        );
+        redirected_clients[portal_index] =
+            portal->client_window;
+    }
+
+    // Paint the title bar from the frame pixmap.
+    cairo_save(buffer_cr);
+    cairo_rectangle(
+        buffer_cr,
+        portal->geometry.x_root,
+        portal->geometry.y_root,
+        portal->geometry.width,
+        PORTAL_TITLE_BAR_HEIGHT
+    );
+    cairo_clip(buffer_cr);
+    cairo_set_source_surface(
+        buffer_cr,
+        frame_surface,
+        portal->geometry.x_root,
+        portal->geometry.y_root
+    );
+    cairo_paint(buffer_cr);
+    cairo_restore(buffer_cr);
+
+    // Acquire the client pixmap as a Cairo surface.
+    unsigned int client_height = portal->geometry.height - PORTAL_TITLE_BAR_HEIGHT;
+    Pixmap client_pixmap;
+    cairo_surface_t *client_surface = acquire_window_surface(
+        portal->client_window, portal->client_visual,
+        portal->geometry.width, client_height,
+        true, &client_pixmap
+    );
+
+    // Paint the client at the WM-controlled offset.
+    if (client_surface != NULL)
+    {
+        cairo_set_source_surface(
+            buffer_cr,
+            client_surface,
+            portal->geometry.x_root,
+            portal->geometry.y_root + PORTAL_TITLE_BAR_HEIGHT
+        );
+        cairo_paint(buffer_cr);
+        cairo_set_source_rgb(buffer_cr, 0, 0, 0);
+
+        // Release the client surface and pixmap.
+        cairo_surface_destroy(client_surface);
+        XFreePixmap(display, client_pixmap);
+    }
+
+    // Reset the misalignment flag.
+    portal->misaligned = false;
 }
 
 static void draw_portal(Portal *portal)
@@ -161,50 +281,17 @@ static void draw_portal(Portal *portal)
     Window target_window = has_frame ?
         portal->frame_window : portal->client_window;
 
-    // Grab the server to prevent window destruction during pixmap operations.
-    XGrabServer(display);
-
-    // Verify override-redirect windows are viewable before getting their pixmap.
-    // These windows are controlled by clients and can change state rapidly.
-    // Framed portals are controlled by us, so we trust portal->mapped.
-    if (portal->override_redirect)
-    {
-        XWindowAttributes attrs;
-        if (!XGetWindowAttributes(display, target_window, &attrs) ||
-            attrs.map_state != IsViewable)
-        {
-            XUngrabServer(display);
-            return;
-        }
-    }
-
-    // Get the window pixmap.
-    Pixmap pixmap = XCompositeNameWindowPixmap(display, target_window);
-    if (pixmap == None)
-    {
-        XUngrabServer(display);
-        return;
-    }
-
-    // Release the server grab now that we have the pixmap.
-    XUngrabServer(display);
-
-    // Create a Cairo surface from the pixmap using cached dimensions.
-    cairo_surface_t *window_surface = cairo_xlib_surface_create(
-        display,
-        pixmap,
-        visual,
-        portal->geometry.width,
-        portal->geometry.height
+    // Acquire the window pixmap as a Cairo surface.
+    // Override-redirect windows need viewability checks because clients
+    // control them and can change state rapidly. Framed portals are
+    // controlled by us, so we trust portal->mapped.
+    Pixmap pixmap;
+    cairo_surface_t *window_surface = acquire_window_surface(
+        target_window, visual,
+        portal->geometry.width, portal->geometry.height,
+        portal->override_redirect, &pixmap
     );
-
-    // Check if the surface was created successfully.
-    if (cairo_surface_status(window_surface) != CAIRO_STATUS_SUCCESS)
-    {
-        cairo_surface_destroy(window_surface);
-        XFreePixmap(display, pixmap);
-        return;
-    }
+    if (window_surface == NULL) return;
 
     // Draw the window surface to the off-screen buffer based on decoration kind.
     DecorationKind kind = get_portal_decoration_kind(portal);
@@ -238,6 +325,11 @@ static void draw_portal(Portal *portal)
         );
 
         // Clip to rounded corners and paint portal content.
+        // Normally the frame pixmap is painted as a single surface.
+        // When the client is misaligned within the frame, split
+        // rendering draws the title bar from the frame pixmap and
+        // the client from its own pixmap at the WM-controlled
+        // offset, bypassing the stale position in the frame.
         cairo_save(buffer_cr);
         cairo_rounded_rectangle(
             buffer_cr,
@@ -248,13 +340,20 @@ static void draw_portal(Portal *portal)
             corner_radius
         );
         cairo_clip(buffer_cr);
-        cairo_set_source_surface(
-            buffer_cr,
-            window_surface,
-            portal->geometry.x_root,
-            portal->geometry.y_root
-        );
-        cairo_paint(buffer_cr);
+        if (has_frame && portal->misaligned)
+        {
+            draw_split_content(portal, window_surface);
+        }
+        else
+        {
+            cairo_set_source_surface(
+                buffer_cr,
+                window_surface,
+                portal->geometry.x_root,
+                portal->geometry.y_root
+            );
+            cairo_paint(buffer_cr);
+        }
         cairo_restore(buffer_cr);
 
         // Draw border.
@@ -280,7 +379,7 @@ static void draw_portal(Portal *portal)
     XFreePixmap(display, pixmap);
 }
 
-static void compositor_redraw()
+static void redraw_compositor()
 {
     if (!compositor_enabled) return;
 
@@ -314,10 +413,22 @@ static void compositor_redraw()
 
 HANDLE(Initialize)
 {
-    compositor_init();
+    init_compositor();
 }
 
 HANDLE(Update)
 {
-    compositor_redraw();
+    redraw_compositor();
+}
+
+HANDLE(PortalDestroyed)
+{
+    PortalDestroyedEvent *_event = &event->portal_destroyed;
+
+    // Clear the composite redirect tracking for the destroyed portal.
+    int portal_index = get_portal_index(_event->portal);
+    if (portal_index >= 0)
+    {
+        redirected_clients[portal_index] = 0;
+    }
 }

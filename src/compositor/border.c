@@ -1,8 +1,6 @@
 /**
- * This code is responsible for portal border drawing.
- *
- * Border color adapts per-pixel based on the luminance of adjacent
- * content.
+ * This code is responsible for portal border drawing, where the border color 
+ * adapts per-pixel based on the luminance of adjacent content.
  */
 
 #include "../all.h"

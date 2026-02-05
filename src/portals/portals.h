@@ -51,6 +51,7 @@ typedef struct {
     Window client_window;
     Atom client_window_type;         // The _NET_WM_WINDOW_TYPE of the client.
     Visual *client_visual;
+    bool misaligned;                 // Whether client moved within frame.
 } Portal;
 
 /**
