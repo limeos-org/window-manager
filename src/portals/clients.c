@@ -83,6 +83,27 @@ HANDLE(MapRequest)
     Portal *portal = find_portal_by_window(_event->window);
     if (portal == NULL || portal->client_window != _event->window) return;
 
+    // Populate the portal's `transient_for` value for the limit check below.
+    populate_portal_transient_for(portal);
+
+    // Deny non-transient map if the target workspace is full.
+    if (portal->transient_for == NULL)
+    {
+        int workspace = determine_portal_workspace(portal);
+        if (count_workspace_portals(workspace) >= MAX_WORKSPACE_PORTALS)
+        {
+            // Set WM_STATE to WithdrawnState so the client knows
+            // its map was not accepted (ICCCM 4.1.4).
+            x_set_wm_state(DefaultDisplay, portal->client_window, 0);
+
+            LOG_WARNING(
+                "Workspace %d is full (%d portals); map denied.",
+                workspace, MAX_WORKSPACE_PORTALS
+            );
+            return;
+        }
+    }
+
     // Map all portal windows.
     map_portal(portal);
 }

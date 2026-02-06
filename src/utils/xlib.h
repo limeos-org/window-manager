@@ -199,6 +199,16 @@ Window x_create_simple_window(
 );
 
 /**
+ * Sets the `WM_STATE` property on a window as required by ICCCM.
+ *
+ * @param display The X11 display.
+ * @param window The target window.
+ * @param state The WM state value (0 = WithdrawnState, 1 = NormalState,
+ * 3 = IconicState).
+ */
+void x_set_wm_state(Display *display, Window window, unsigned long state);
+
+/**
  * Retrieves the transient-for window hint for a given window.
  *
  * @param display The X11 display.

@@ -398,6 +398,25 @@ Window x_create_simple_window(
     return window;
 }
 
+void x_set_wm_state(Display *display, Window window, unsigned long state)
+{
+    Atom WM_STATE = XInternAtom(display, "WM_STATE", False);
+    unsigned long state_data[2] = {
+        state,  // WM state (e.g. WithdrawnState, NormalState, IconicState)
+        None    // Icon window (none)
+    };
+    XChangeProperty(
+        display,
+        window,
+        WM_STATE,
+        WM_STATE,
+        32,
+        PropModeReplace,
+        (unsigned char *)state_data,
+        2
+    );
+}
+
 int x_get_transient_for(Display *display, Window window, Window *out_transient_for)
 {
     Window transient_for = None;

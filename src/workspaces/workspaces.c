@@ -17,11 +17,45 @@ int get_current_workspace()
     return current_workspace;
 }
 
+int determine_portal_workspace(Portal *portal)
+{
+    return (portal->workspace != -1) ? portal->workspace : current_workspace;
+}
+
+int count_workspace_portals(int workspace)
+{
+    int count = 0;
+    Portal *portals = get_unsorted_portals();
+    for (unsigned int i = 0; i < MAX_PORTALS; i++)
+    {
+        Portal *portal = &portals[i];
+        if (!portal->active) continue;
+        if (!portal->initialized) continue;
+        if (portal->workspace != workspace) continue;
+        if (portal->visibility == PORTAL_HIDDEN) continue;
+        if (portal->transient_for != NULL) continue;
+        if (portal->override_redirect) continue;
+        count++;
+    }
+    return count;
+}
+
 void move_portal_to_workspace(Portal *portal, int workspace)
 {
     if (portal == NULL) return;
     if (workspace < 0 || workspace >= MAX_WORKSPACES) return;
     if (portal->workspace == workspace) return;
+
+    // Deny move to a full workspace (transients are exempt).
+    if (portal->transient_for == NULL &&
+        count_workspace_portals(workspace) >= MAX_WORKSPACE_PORTALS)
+    {
+        LOG_WARNING(
+            "Workspace %d is full (%d portals); move denied.",
+            workspace, MAX_WORKSPACE_PORTALS
+        );
+        return;
+    }
 
     // Store old workspace for the event.
     int old_workspace = portal->workspace;
@@ -164,8 +198,8 @@ HANDLE(PortalInitialized)
 {
     Portal *portal = event->portal_initialized.portal;
 
-    // Assign the portal to the current workspace.
-    portal->workspace = current_workspace;
+    // Assign the portal to its target workspace.
+    portal->workspace = determine_portal_workspace(portal);
 }
 
 HANDLE(PortalDestroyed)

@@ -237,6 +237,16 @@ Portal *find_portal_at_pos(int x_root, int y_root);
 Portal *find_portal_transient_root(Portal *portal);
 
 /**
+ * Resolves the transient-for relationship of a portal from the
+ * `WM_TRANSIENT_FOR` X property.
+ *
+ * @param portal The portal to resolve.
+ *
+ * @note Has no effect if the relationship is already resolved.
+ */
+void populate_portal_transient_for(Portal *portal);
+
+/**
  * Determines the decoration kind for a portal.
  *
  * @param portal The portal to check.

@@ -635,41 +635,18 @@ void map_portal(Portal *portal)
         {
             XMapWindow(display, portal->client_window);
 
-            // Set WM_STATE property as required by ICCCM.
-            // This tells the client it's being managed and in what state.
-            Atom WM_STATE = XInternAtom(display, "WM_STATE", False);
-            unsigned long state_data[2] = {
-                1,      // NormalState
-                None    // Icon window (none)
-            };
-            XChangeProperty(
-                display,
-                portal->client_window,
-                WM_STATE,
-                WM_STATE,
-                32,
-                PropModeReplace,
-                (unsigned char *)state_data,
-                2
-            );
+            // Set `WM_STATE` to NormalState as required by ICCCM.
+            x_set_wm_state(display, portal->client_window, 1);
         }
     }
 
     // Transition the portal to visible.
     portal->visibility = PORTAL_VISIBLE;
 
-    // Resolve transient relationship early so positioning can use it.
-    // If the parent window is not managed, `transient_for` stays NULL which
-    // indicates the portal should behave as a standalone window.
-    {
-        Window parent_window = None;
-        if (x_get_transient_for(display, portal->client_window, &parent_window) == 0)
-        {
-            portal->transient_for = find_portal_by_window(parent_window);
-        }
-    }
+    // Populate the portal's `transient_for` so positioning can use it.
+    populate_portal_transient_for(portal);
 
-    // Apply WM_NORMAL_HINTS position if specified by the client, otherwise 
+    // Apply `WM_NORMAL_HINTS` position if specified by the client, otherwise 
     // center the portal relative to either the screen (normal) or parent 
     // (transient). Override-redirect windows position themselves, so skip them.
     // Only do this on first map to preserve portal position across when 
@@ -891,6 +868,19 @@ Portal *find_portal_transient_root(Portal *portal)
         depth++;
     }
     return portal;
+}
+
+void populate_portal_transient_for(Portal *portal)
+{
+    // Skip if the transient relationship is already resolved.
+    if (portal->transient_for != NULL) return;
+
+    // Query the `WM_TRANSIENT_FOR` property and look up the parent portal.
+    Window transient_parent = None;
+    if (x_get_transient_for(DefaultDisplay, portal->client_window, &transient_parent) == 0)
+    {
+        portal->transient_for = find_portal_by_window(transient_parent);
+    }
 }
 
 PortalDecoration get_portal_decoration_kind(Portal *portal)
