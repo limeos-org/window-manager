@@ -95,6 +95,9 @@ HANDLE(MapNotify)
     Portal *portal = find_portal_by_window(_event->window);
     if (portal == NULL || portal->client_window != _event->window) return;
 
+    // Skip if already visible (avoids re-entrance from our own map calls).
+    if (portal->visibility == PORTAL_VISIBLE) return;
+
     // Map all portal windows.
     map_portal(portal);
 }
@@ -107,7 +110,10 @@ HANDLE(UnmapNotify)
     Portal *portal = find_portal_by_window(_event->window);
     if (portal == NULL || portal->client_window != _event->window) return;
 
-    // Unmap all portal windows.
+    // Ignore WM-initiated unmaps (suspend). Only handle client withdrawals.
+    if (portal->visibility != PORTAL_VISIBLE) return;
+
+    // Unmap all portal windows (client withdrawal).
     unmap_portal(portal);
 }
 

@@ -2,7 +2,7 @@
 
 void handle_portal_focus_click(Portal *portal)
 {
-    if (!portal->mapped) return;
+    if (portal->visibility != PORTAL_VISIBLE) return;
 
     // Always set keyboard focus (external events can steal it).
     XSetInputFocus(
@@ -29,7 +29,7 @@ HANDLE(PortalDestroyed)
     Portal *next_portal = NULL;
     if (destroyed->transient_for != NULL &&
         destroyed->transient_for->initialized &&
-        destroyed->transient_for->mapped &&
+        destroyed->transient_for->visibility == PORTAL_VISIBLE &&
         destroyed->transient_for->workspace == get_current_workspace())
     {
         next_portal = destroyed->transient_for;
@@ -46,7 +46,7 @@ HANDLE(PortalDestroyed)
             Portal *portal = sorted[i];
             if (portal == NULL) continue;
             if (portal == destroyed) continue;
-            if (!portal->initialized || !portal->mapped) continue;
+            if (!portal->initialized || portal->visibility != PORTAL_VISIBLE) continue;
             if (portal->workspace != get_current_workspace()) continue;
             next_portal = portal;
             break;

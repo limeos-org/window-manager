@@ -13,16 +13,27 @@
 /** The maximum number of portals that can be managed simultaneously. */
 #define MAX_PORTALS 256
 
-/** Decoration kinds for portals. */
+/** A type representing the decoration style applied to a portal. */
 typedef enum
 {
     /** No decorations applied. */
-    DECORATION_NONE,
+    PORTAL_DECORATION_NONE,
     /** Shadow and border for portals without a titlebar. */
-    DECORATION_FRAMELESS,
+    PORTAL_DECORATION_FRAMELESS,
     /** Shadow and border for portals with a titlebar. */
-    DECORATION_FRAMED
-} DecorationKind;
+    PORTAL_DECORATION_FRAMED
+} PortalDecoration;
+
+/** A type representing the visibility lifecycle state of a portal. */
+typedef enum
+{
+    /** Not visible; client does not want this portal shown. */
+    PORTAL_HIDDEN,
+    /** Visible on screen; client wants this portal shown. */
+    PORTAL_VISIBLE,
+    /** Not visible; client wants it shown but WM suspended it. */
+    PORTAL_SUSPENDED
+} PortalVisibility;
 
 /** A geometry rectangle with root-relative position and dimensions. */
 typedef struct {
@@ -40,7 +51,7 @@ typedef struct Portal {
     bool initialized;                // Whether first-time setup has completed.
     bool top_level;                  // Whether this portal is a child of root.
     struct Portal *transient_for;    // Parent portal if transient, else NULL.
-    bool mapped;
+    PortalVisibility visibility;     // Lifecycle visibility state.
     bool override_redirect;          // Whether client manages its own geometry.
     bool fullscreen;
     int workspace;                   // -1 if unassigned.
@@ -128,11 +139,37 @@ void raise_portal(Portal *portal);
 void map_portal(Portal *portal);
 
 /**
- * Unmaps all portal windows from the screen.
- * 
+ * Unmaps all portal windows from the screen as a client withdrawal.
+ *
+ * Transitions the portal to PORTAL_HIDDEN. The portal will not be
+ * re-mapped by workspace switches.
+ *
  * @param portal The portal to unmap.
  */
 void unmap_portal(Portal *portal);
+
+/**
+ * Suspends a portal by unmapping it from the screen without changing
+ * the client's visibility intent.
+ *
+ * Transitions a PORTAL_VISIBLE portal to PORTAL_SUSPENDED. The portal
+ * will be revealed when the workspace is re-entered. Has no effect if
+ * the portal is not PORTAL_VISIBLE.
+ *
+ * @param portal The portal to suspend.
+ */
+void suspend_portal(Portal *portal);
+
+/**
+ * Reveals a previously suspended portal by mapping it back to the
+ * screen.
+ *
+ * Only acts on portals in the PORTAL_SUSPENDED state. Portals that
+ * are PORTAL_HIDDEN (client-withdrawn) are not affected.
+ *
+ * @param portal The portal to reveal.
+ */
+void reveal_portal(Portal *portal);
 
 /**
  * Retrieves the index of a portal in the unsorted registry array.
@@ -204,10 +241,9 @@ Portal *find_portal_transient_root(Portal *portal);
  *
  * @param portal The portal to check.
  *
- * @return - `DECORATION_FRAMED` The portal has a WM frame.
- * @return - `DECORATION_FRAMELESS` The portal is a CSD or
+ * @return - `PORTAL_DECORATION_FRAMED` The portal has a WM frame.
+ * @return - `PORTAL_DECORATION_FRAMELESS` The portal is a CSD or
  * override-redirect window.
- *
- * @return - `DECORATION_NONE` The portal should not be decorated.
+ * @return - `PORTAL_DECORATION_NONE` The portal should not be decorated.
  */
-DecorationKind get_portal_decoration_kind(Portal *portal);
+PortalDecoration get_portal_decoration_kind(Portal *portal);

@@ -92,8 +92,10 @@ static Portal *find_fullscreen_portal()
     for (int i = count - 1; i >= 0; i--)
     {
         Portal *portal = sorted[i];
-        if (portal != NULL && portal->fullscreen && portal->mapped)
-        {
+        if (portal != NULL &&
+            portal->fullscreen &&
+            portal->visibility == PORTAL_VISIBLE
+        ) {
             return portal;
         }
     }
@@ -270,7 +272,7 @@ static void draw_portal(Portal *portal)
 {
     if (!compositor_enabled) return;
     if (portal == NULL) return;
-    if (portal->mapped == false) return;
+    if (portal->visibility != PORTAL_VISIBLE) return;
     if (portal->initialized == false) return;
 
     Display *display = DefaultDisplay;
@@ -284,7 +286,7 @@ static void draw_portal(Portal *portal)
     // Acquire the window pixmap as a Cairo surface.
     // Override-redirect windows need viewability checks because clients
     // control them and can change state rapidly. Framed portals are
-    // controlled by us, so we trust portal->mapped.
+    // controlled by us, so we trust `portal->visibility`.
     Pixmap pixmap;
     cairo_surface_t *window_surface = acquire_window_surface(
         target_window, visual,
@@ -294,14 +296,14 @@ static void draw_portal(Portal *portal)
     if (window_surface == NULL) return;
 
     // Draw the window surface to the off-screen buffer based on decoration kind.
-    DecorationKind kind = get_portal_decoration_kind(portal);
-    if (kind == DECORATION_FRAMED || kind == DECORATION_FRAMELESS)
+    PortalDecoration kind = get_portal_decoration_kind(portal);
+    if (kind == PORTAL_DECORATION_FRAMED || kind == PORTAL_DECORATION_FRAMELESS)
     {
         // Select decoration parameters based on kind.
         int shadow_layers;
         double shadow_spread, shadow_opacity, corner_radius;
         void (*draw_border)(cairo_t *, Portal *, Pixmap);
-        if (kind == DECORATION_FRAMED)
+        if (kind == PORTAL_DECORATION_FRAMED)
         {
             shadow_layers = 4;
             shadow_spread = 20;

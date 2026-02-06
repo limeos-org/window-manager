@@ -50,7 +50,7 @@ Portal *create_portal(Window client_window)
         .client_window_type = None,
         .transient_for = NULL,
         .initialized = false,
-        .mapped = false,
+        .visibility = PORTAL_HIDDEN,
         .top_level = false,
         .fullscreen = false,
         .workspace = -1,
@@ -243,8 +243,16 @@ void sort_portals()
         portals_added++;
     }
 
-    // Synchronize top_portal (last valid entry is topmost).
-    top_portal = (portals_added > 0) ? registry.sorted[portals_added - 1] : NULL;
+    // Synchronize top_portal to the topmost visible portal.
+    top_portal = NULL;
+    for (int i = portals_added - 1; i >= 0; i--)
+    {
+        if (registry.sorted[i]->visibility == PORTAL_VISIBLE)
+        {
+            top_portal = registry.sorted[i];
+            break;
+        }
+    }
 
     // Clear remaining slots, if any.
     while (portals_added < MAX_PORTALS) {
@@ -612,8 +620,8 @@ void map_portal(Portal *portal)
         initialize_portal(portal);
     }
 
-    // Map non-override-redirect portals. Override-redirect clients manage                                                                                                  
-    // themselves, but we still mark them as mapped later.
+    // Map non-override-redirect portals. Override-redirect clients manage
+    // themselves, but we still transition them to visible later.
     if (!portal->override_redirect)
     {
         // Map the frame window, if it exists.
@@ -647,8 +655,8 @@ void map_portal(Portal *portal)
         }
     }
 
-    // Mark the portal as mapped.
-    portal->mapped = true;
+    // Transition the portal to visible.
+    portal->visibility = PORTAL_VISIBLE;
 
     // Resolve transient relationship early so positioning can use it.
     // If the parent window is not managed, `transient_for` stays NULL which
@@ -665,7 +673,7 @@ void map_portal(Portal *portal)
     // center the portal relative to either the screen (normal) or parent 
     // (transient). Override-redirect windows position themselves, so skip them.
     // Only do this on first map to preserve portal position across when 
-    // unmapping and remapping (Fullscreen, Workspace switching).
+    // suspending and revealing (Fullscreen, Workspace switching).
     if (!portal->override_redirect && first_map)
     {
         bool should_center = true;
@@ -735,8 +743,8 @@ void unmap_portal(Portal *portal)
 {
     Display *display = DefaultDisplay;
 
-    // Unmap non-override-redirect portals. Override-redirect clients manage                                                                                                  
-    // themselves, but we still mark them as unmapped later.
+    // Unmap non-override-redirect portals. Override-redirect clients manage
+    // themselves, but we still transition them to hidden later.
     if (!portal->override_redirect)
     {
         // Unmap the frame window, if it exists.
@@ -752,14 +760,57 @@ void unmap_portal(Portal *portal)
         }
     }
 
-    // Mark the portal as unmapped.
-    portal->mapped = false;
+    // Transition the portal to hidden (client withdrawal).
+    portal->visibility = PORTAL_HIDDEN;
 
     // Call all event handlers of the PortalUnmapped event.
     call_event_handlers((Event*)&(PortalUnmappedEvent){
         .type = PortalUnmapped,
         .portal = portal
     });
+}
+
+void suspend_portal(Portal *portal)
+{
+    Display *display = DefaultDisplay;
+
+    // Only suspend portals that are currently visible.
+    if (portal->visibility != PORTAL_VISIBLE) return;
+
+    // Unmap non-override-redirect portals.
+    if (!portal->override_redirect)
+    {
+        // Unmap the frame window, if it exists.
+        if (is_portal_frame_valid(portal))
+        {
+            XUnmapWindow(display, portal->frame_window);
+        }
+
+        // Unmap the client window, if it exists.
+        if (is_portal_client_valid(portal))
+        {
+            XUnmapWindow(display, portal->client_window);
+        }
+    }
+
+    // Transition the portal to suspended (WM-hidden, client still
+    // wants visible).
+    portal->visibility = PORTAL_SUSPENDED;
+
+    // Call all event handlers of the PortalUnmapped event.
+    call_event_handlers((Event*)&(PortalUnmappedEvent){
+        .type = PortalUnmapped,
+        .portal = portal
+    });
+}
+
+void reveal_portal(Portal *portal)
+{
+    // Only reveal portals that are suspended.
+    if (portal->visibility != PORTAL_SUSPENDED) return;
+
+    // Map the portal (transitions to PORTAL_VISIBLE).
+    map_portal(portal);
 }
 
 int get_portal_index(Portal *portal)
@@ -816,7 +867,7 @@ Portal *find_portal_at_pos(int x_root, int y_root)
         if (portal == NULL) continue;
         if (!portal->active) continue;
         if (portal->initialized == false) continue;
-        if (portal->mapped == false) continue;
+        if (portal->visibility != PORTAL_VISIBLE) continue;
 
         // Check if the portal is located at the specified position.
         if (x_root >= portal->geometry.x_root &&
@@ -842,12 +893,12 @@ Portal *find_portal_transient_root(Portal *portal)
     return portal;
 }
 
-DecorationKind get_portal_decoration_kind(Portal *portal)
+PortalDecoration get_portal_decoration_kind(Portal *portal)
 {
     // Framed windows get full decorations.
     if (is_portal_frame_valid(portal))
     {
-        return DECORATION_FRAMED;
+        return PORTAL_DECORATION_FRAMED;
     }
 
     // Skip tooltips and notifications (not managed as separate portals).
@@ -865,14 +916,14 @@ DecorationKind get_portal_decoration_kind(Portal *portal)
     if (portal->client_window_type == tooltip ||
         portal->client_window_type == notification
     ) {
-        return DECORATION_NONE;
+        return PORTAL_DECORATION_NONE;
     }
 
     // Return frameless decorations for CSD apps and override-redirect windows.
     if (portal->top_level || portal->override_redirect)
     {
-        return DECORATION_FRAMELESS;
+        return PORTAL_DECORATION_FRAMELESS;
     }
 
-    return DECORATION_NONE;
+    return PORTAL_DECORATION_NONE;
 }

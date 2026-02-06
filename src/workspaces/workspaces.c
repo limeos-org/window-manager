@@ -26,10 +26,11 @@ void move_portal_to_workspace(Portal *portal, int workspace)
     // Store old workspace for the event.
     int old_workspace = portal->workspace;
 
-    // Unmap if currently visible on active workspace.
-    if (portal->workspace == current_workspace && portal->mapped)
-    {
-        unmap_portal(portal);
+    // Suspend if currently visible on active workspace.
+    if (portal->workspace == current_workspace &&
+        portal->visibility == PORTAL_VISIBLE
+    ) {
+        suspend_portal(portal);
     }
 
     // Update workspace assignment.
@@ -92,11 +93,11 @@ void switch_workspace(int workspace)
 
         if (portal->workspace == old_workspace)
         {
-            unmap_portal(portal);
+            suspend_portal(portal);
         }
         else if (portal->workspace == workspace)
         {
-            map_portal(portal);
+            reveal_portal(portal);
         }
     }
 
@@ -106,13 +107,13 @@ void switch_workspace(int workspace)
     // Verify the last focused portal is still valid and on this workspace.
     if (to_focus != NULL)
     {
-        if (!to_focus->initialized || !to_focus->mapped || to_focus->workspace != workspace)
+        if (!to_focus->initialized || to_focus->visibility != PORTAL_VISIBLE || to_focus->workspace != workspace)
         {
             to_focus = NULL;
         }
     }
 
-    // Fallback to topmost mapped portal if no last focused portal is available.
+    // Fallback to topmost visible portal if no last focused portal is available.
     if (to_focus == NULL)
     {
         unsigned int sorted_count = 0;
@@ -121,7 +122,7 @@ void switch_workspace(int workspace)
         {
             Portal *portal = sorted[i];
             if (portal == NULL) continue;
-            if (!portal->initialized || !portal->mapped) continue;
+            if (!portal->initialized || portal->visibility != PORTAL_VISIBLE) continue;
             if (portal->workspace != workspace) continue;
             to_focus = portal;
             break;
