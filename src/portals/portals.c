@@ -48,6 +48,7 @@ Portal *create_portal(Window client_window)
         .active = true,
         .title = title,
         .client_window_type = None,
+        .transient_for = NULL,
         .initialized = false,
         .mapped = false,
         .top_level = false,
@@ -104,6 +105,16 @@ void destroy_portal(Portal *portal)
         .type = PortalDestroyed,
         .portal = portal
     });
+
+    // Clear transient references to this portal.
+    for (int i = 0; i < MAX_PORTALS; i++)
+    {
+        if (!registry.unsorted[i].active) continue;
+        if (registry.unsorted[i].transient_for == portal)
+        {
+            registry.unsorted[i].transient_for = NULL;
+        }
+    }
 
     // Free the allocated memory for the title.
     free(portal->title);
@@ -541,18 +552,42 @@ Portal *get_top_portal()
     return top_portal;
 }
 
-void raise_portal(Portal *portal)
+static void raise_portal_window(Portal *portal)
 {
-    // Ensure the portal has been initialized.
-    if (portal->initialized == false) return;
-
     // Determine which window to raise.
     Window target_window = (is_portal_frame_valid(portal))
         ? portal->frame_window
         : portal->client_window;
 
-    // Raise the portal windows.
+    // Raise the window.
     XRaiseWindow(DefaultDisplay, target_window);
+}
+
+void raise_portal(Portal *portal)
+{
+    // Ensure the portal has been initialized.
+    if (portal->initialized == false) return;
+
+    // Find the root of this portal's transient group.
+    Portal *root = find_portal_transient_root(portal);
+
+    // Raise the root portal first.
+    raise_portal_window(root);
+
+    // Raise all transient children whose root matches, so they stack
+    // above the parent. This naturally handles chains since each child
+    // is raised after its ancestor.
+    for (int i = 0; i < MAX_PORTALS; i++)
+    {
+        Portal *candidate = &registry.unsorted[i];
+        if (!candidate->active) continue;
+        if (!candidate->initialized) continue;
+        if (candidate->transient_for == NULL) continue;
+        if (find_portal_transient_root(candidate) == root)
+        {
+            raise_portal_window(candidate);
+        }
+    }
 
     // Re-sort the portals.
     sort_portals();
@@ -615,10 +650,22 @@ void map_portal(Portal *portal)
     // Mark the portal as mapped.
     portal->mapped = true;
 
-    // Apply WM_NORMAL_HINTS position if specified by the client, or center
-    // the portal if position is (0,0) or not specified. Override-redirect
-    // windows position themselves, so skip them. Only do this on first map
-    // to preserve portal position across workspace switches.
+    // Resolve transient relationship early so positioning can use it.
+    // If the parent window is not managed, `transient_for` stays NULL which
+    // indicates the portal should behave as a standalone window.
+    {
+        Window parent_window = None;
+        if (x_get_transient_for(display, portal->client_window, &parent_window) == 0)
+        {
+            portal->transient_for = find_portal_by_window(parent_window);
+        }
+    }
+
+    // Apply WM_NORMAL_HINTS position if specified by the client, otherwise 
+    // center the portal relative to either the screen (normal) or parent 
+    // (transient). Override-redirect windows position themselves, so skip them.
+    // Only do this on first map to preserve portal position across when 
+    // unmapping and remapping (Fullscreen, Workspace switching).
     if (!portal->override_redirect && first_map)
     {
         bool should_center = true;
@@ -626,7 +673,8 @@ void map_portal(Portal *portal)
         if (XGetWMNormalHints(display, portal->client_window, &hints, &(long){0}))
         {
             // Check if position hints represent an intentional placement.
-            // Positions at or near origin (0,0 or 1,1) are often toolkit defaults.
+            // Positions at or near origin (0,0 or 1,1) are often toolkit
+            // defaults.
             bool is_default_position = (hints.x <= 1 && hints.y <= 1);
             bool has_real_position = (hints.flags & (USPosition | PPosition)) && !is_default_position;
 
@@ -646,25 +694,33 @@ void map_portal(Portal *portal)
 
         if (should_center)
         {
-            int screen = DefaultScreen(display);
-            int screen_width = DisplayWidth(display, screen);
-            int screen_height = DisplayHeight(display, screen);
-            int center_x = (screen_width - (int)portal->geometry.width) / 2;
-            int center_y = (screen_height - (int)portal->geometry.height) / 2;
-            move_portal(portal, center_x, center_y);
+            Portal *parent = portal->transient_for;
+            if (parent == NULL)
+            {
+                // Normal - Center on screen.
+                int screen = DefaultScreen(display);
+                int screen_width = DisplayWidth(display, screen);
+                int screen_height = DisplayHeight(display, screen);
+                int center_x = (screen_width - (int)portal->geometry.width) / 2;
+                int center_y = (screen_height - (int)portal->geometry.height) / 2;
+                move_portal(portal, center_x, center_y);
+            }
+            else
+            {
+                // Transient - Center on parent portal.
+                int center_x = parent->geometry.x_root + ((int)parent->geometry.width - (int)portal->geometry.width) / 2;
+                int center_y = parent->geometry.y_root + ((int)parent->geometry.height - (int)portal->geometry.height) / 2;
+                move_portal(portal, center_x, center_y);
+            }
         }
     }
 
     // Synchronize the portal geometry.
     synchronize_portal(portal);
 
-    // Handle transient windows (dialogs, popups) - they should be raised above
-    // their parent window per ICCCM.
-    Window transient_for = None;
-    if (x_get_transient_for(display, portal->client_window, &transient_for) == 0)
+    // Raise the portal above its parent if applicable, as per ICCCM.
+    if (portal->transient_for != NULL)
     {
-        // This portal is transient for another window. Raise it to ensure
-        // it appears above its parent.
         raise_portal(portal);
     }
 
@@ -748,6 +804,44 @@ Portal *find_portal_by_window(Window window)
     return NULL;
 }
 
+Portal *find_portal_at_pos(int x_root, int y_root)
+{
+    // Iterate over the sorted portals in reverse order, to find the topmost
+    // portal at the specified position.
+    for (int i = MAX_PORTALS - 1; i >= 0; i--)
+    {
+        Portal *portal = registry.sorted[i];
+
+        // Skip invalid portals.
+        if (portal == NULL) continue;
+        if (!portal->active) continue;
+        if (portal->initialized == false) continue;
+        if (portal->mapped == false) continue;
+
+        // Check if the portal is located at the specified position.
+        if (x_root >= portal->geometry.x_root &&
+            y_root >= portal->geometry.y_root &&
+            x_root < portal->geometry.x_root + (int)portal->geometry.width &&
+            y_root < portal->geometry.y_root + (int)portal->geometry.height)
+        {
+            return portal;
+        }
+    }
+    return NULL;
+}
+
+Portal *find_portal_transient_root(Portal *portal)
+{
+    // Walk up the transient chain to the root.
+    int depth = 0;
+    while (portal->transient_for != NULL && depth < MAX_PORTALS)
+    {
+        portal = portal->transient_for;
+        depth++;
+    }
+    return portal;
+}
+
 DecorationKind get_portal_decoration_kind(Portal *portal)
 {
     // Framed windows get full decorations.
@@ -781,30 +875,4 @@ DecorationKind get_portal_decoration_kind(Portal *portal)
     }
 
     return DECORATION_NONE;
-}
-
-Portal *find_portal_at_pos(int x_root, int y_root)
-{
-    // Iterate over the sorted portals in reverse order, to find the topmost
-    // portal at the specified position.
-    for (int i = MAX_PORTALS - 1; i >= 0; i--)
-    {
-        Portal *portal = registry.sorted[i];
-
-        // Skip invalid portals.
-        if (portal == NULL) continue;
-        if (!portal->active) continue;
-        if (portal->initialized == false) continue;
-        if (portal->mapped == false) continue;
-
-        // Check if the portal is located at the specified position.
-        if (x_root >= portal->geometry.x_root &&
-            y_root >= portal->geometry.y_root &&
-            x_root < portal->geometry.x_root + (int)portal->geometry.width &&
-            y_root < portal->geometry.y_root + (int)portal->geometry.height)
-        {
-            return portal;
-        }
-    }
-    return NULL;
 }

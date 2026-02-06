@@ -25,19 +25,32 @@ HANDLE(PortalDestroyed)
 {
     Portal *destroyed = event->portal_destroyed.portal;
 
-    // Find the next topmost portal to focus (sorted array is bottom-to-top).
-    unsigned int count = 0;
-    Portal **sorted = get_sorted_portals(&count);
+    // Prefer focusing back to the transient parent if available.
     Portal *next_portal = NULL;
-    for (int i = (int)count - 1; i >= 0; i--)
+    if (destroyed->transient_for != NULL &&
+        destroyed->transient_for->initialized &&
+        destroyed->transient_for->mapped &&
+        destroyed->transient_for->workspace == get_current_workspace())
     {
-        Portal *portal = sorted[i];
-        if (portal == NULL) continue;
-        if (portal == destroyed) continue;
-        if (!portal->initialized || !portal->mapped) continue;
-        if (portal->workspace != get_current_workspace()) continue;
-        next_portal = portal;
-        break;
+        next_portal = destroyed->transient_for;
+    }
+
+    // Otherwise find the next topmost portal to put focus on (sorted array is 
+    // bottom-to-top).
+    if (next_portal == NULL)
+    {
+        unsigned int count = 0;
+        Portal **sorted = get_sorted_portals(&count);
+        for (int i = (int)count - 1; i >= 0; i--)
+        {
+            Portal *portal = sorted[i];
+            if (portal == NULL) continue;
+            if (portal == destroyed) continue;
+            if (!portal->initialized || !portal->mapped) continue;
+            if (portal->workspace != get_current_workspace()) continue;
+            next_portal = portal;
+            break;
+        }
     }
 
     if (next_portal == NULL) return;

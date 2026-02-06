@@ -34,11 +34,12 @@ typedef struct {
  * A portal represents a window pair consisting of a decorative frame and the
  * client content area, along with its geometry and rendering state.
  */
-typedef struct {
+typedef struct Portal {
     bool active;                     // Whether this registry slot is in use.
     char *title;
     bool initialized;                // Whether first-time setup has completed.
     bool top_level;                  // Whether this portal is a child of root.
+    struct Portal *transient_for;    // Parent portal if transient, else NULL.
     bool mapped;
     bool override_redirect;          // Whether client manages its own geometry.
     bool fullscreen;
@@ -188,6 +189,15 @@ Portal *find_portal_by_window(Window window);
  * @return - `NULL` The portal could not be found.
  */
 Portal *find_portal_at_pos(int x_root, int y_root);
+
+/**
+ * Walks up the transient chain to find the root ancestor.
+ *
+ * @param portal The portal to start from.
+ *
+ * @return The root ancestor, or the portal itself if it has no parent.
+ */
+Portal *find_portal_transient_root(Portal *portal);
 
 /**
  * Determines the decoration kind for a portal.
