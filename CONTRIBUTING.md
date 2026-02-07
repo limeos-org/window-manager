@@ -71,8 +71,7 @@ sudo apt install \
    libxfixes-dev \
    libxrandr-dev \
    libxcomposite-dev \
-   libcairo2-dev \
-   libdbus-1-dev
+   libcairo2-dev
 ```
 
 If you're not using a Debian-based distribution, package names may differ.
@@ -92,17 +91,6 @@ Then, from the root directory of this repository, build the project by running:
 ```bash
 make
 ```
-
-Optionally, generate `compile_commands.json` for code intelligence by running:
-
-```bash
-make setup
-```
-
-For the best development experience, we recommend using the
-[clangd](https://clangd.llvm.org/) language server, which automatically reads
-`compile_commands.json`. For VS Code, install the
-[clangd extension](https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd).
 
 Finally, verify the build succeeded by checking that the executable exists at
 `./bin/limeos-window-manager`.

@@ -25,11 +25,17 @@ typedef struct {
     ThemeColorRGBA titlebar_separator;
 } Theme;
 
-/** Returns the current theme based on system color scheme preference. */
-const Theme* get_current_theme(void);
+/** A type representing the active theme mode. */
+typedef enum {
+    THEME_MODE_LIGHT,
+    THEME_MODE_DARK,
+    THEME_MODE_ADAPTIVE
+} ThemeMode;
 
-/** Returns the D-Bus file descriptor for theme updates, or -1 if unavailable. */
-int get_theme_dbus_fd(void);
+struct Portal;
 
-/** Dispatches pending D-Bus messages for theme updates. */
-void dispatch_theme_dbus(void);
+/** Returns the theme for a specific portal based on the active theme mode. */
+const Theme* get_portal_theme(struct Portal *portal);
+
+/** Returns the active theme mode. */
+ThemeMode get_theme_mode(void);

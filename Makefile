@@ -6,7 +6,7 @@ CC = clang
 CFLAGS = -Wall -Wextra -g -MMD -MP
 
 INTERNAL_LIBS = $(shell pkg-config --libs limeos-common-lib)
-EXTERNAL_DEPS = x11 xcomposite xi xrandr xfixes cairo dbus-1
+EXTERNAL_DEPS = x11 xcomposite xi xrandr xfixes cairo
 EXTERNAL_LIBS = $(shell pkg-config --libs $(EXTERNAL_DEPS))
 LIBS = $(INTERNAL_LIBS) $(EXTERNAL_LIBS)
 
@@ -44,21 +44,7 @@ clean:
 	rm -rf $(OBJ_DIR) $(BIN_DIR)
 
 # ---
-# Setup
-# ---
-
-setup:
-	@echo "[" > compile_commands.json
-	@first=1; for src in $(SOURCES); do \
-		[ $$first -eq 0 ] && echo "," >> compile_commands.json; \
-		first=0; \
-		echo "{\"directory\":\"$(CURDIR)\",\"file\":\"$$src\",\"arguments\":[\"$(CC)\",$(foreach f,$(CFLAGS),\"$(f)\",)\"-c\",\"$$src\"]}" >> compile_commands.json; \
-	done
-	@echo "]" >> compile_commands.json
-	@echo "Generated compile_commands.json"
-
-# ---
 # Other
 # ---
 
-.PHONY: all clean setup
+.PHONY: all clean

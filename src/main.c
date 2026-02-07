@@ -7,7 +7,6 @@ static const char *libraries[] = {
     "libXrandr.so.2",
     "libXcomposite.so.1",
     "libcairo.so.2",
-    "libdbus-1.so.3",
 };
 
 static int custom_x_error_handler(Display *display, XErrorEvent *error)

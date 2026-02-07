@@ -107,7 +107,7 @@ void create_portal_frame(Portal *portal)
 
 void draw_portal_frame(Portal *portal)
 {
-    const Theme *theme = get_current_theme();
+    const Theme *theme = get_portal_theme(portal);
     cairo_t *cr = portal->frame_cr;
     unsigned int width = portal->geometry.width;
     unsigned int height = portal->geometry.height;
@@ -185,21 +185,6 @@ bool is_portal_frame_area(Portal *portal, int rel_x, int rel_y)
             rel_x < (int)portal->geometry.width &&
             rel_y >= 0 &&
             rel_y < PORTAL_TITLE_BAR_HEIGHT);
-}
-
-HANDLE(ThemeChanged)
-{
-    // Redraw each portal's frame to apply the new theme.
-    unsigned int count;
-    Portal **portals = get_sorted_portals(&count);
-    for (unsigned int i = 0; i < count; i++)
-    {
-        if (portals[i] == NULL) continue;
-        if (is_portal_frame_valid(portals[i]))
-        {
-            draw_portal_frame(portals[i]);
-        }
-    }
 }
 
 HANDLE(PortalFocused)

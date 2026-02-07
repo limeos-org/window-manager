@@ -607,3 +607,38 @@ bool x_focus_window(Display *display, Window window)
     XSetInputFocus(display, window, RevertToPointerRoot, CurrentTime);
     return true;
 }
+
+float x_pixel_luminance(XImage *image, int x, int y)
+{
+    // Retrieve the pixel value at the given coordinates.
+    unsigned long pixel = XGetPixel(image, x, y);
+
+    // Extract RGB components and compute luminance.
+    unsigned char r = (pixel >> 16) & 0xFF;
+    unsigned char g = (pixel >> 8) & 0xFF;
+    unsigned char b = pixel & 0xFF;
+    return (float)(0.299 * r + 0.587 * g + 0.114 * b) / 255.0f;
+}
+
+float x_average_luminance(Display *display, Pixmap pixmap, int x, int y, int width, int height)
+{
+    // Acquire the region from the pixmap.
+    XImage *image = XGetImage(
+        display, pixmap, x, y, width, height, AllPlanes, ZPixmap
+    );
+    if (!image) return -1.0f;
+
+    // Accumulate luminance across all pixels in the region.
+    double total = 0.0;
+    int pixel_count = width * height;
+    for (int py = 0; py < height; py++)
+    {
+        for (int px = 0; px < width; px++)
+        {
+            total += x_pixel_luminance(image, px, py);
+        }
+    }
+    XDestroyImage(image);
+
+    return (float)(total / pixel_count);
+}

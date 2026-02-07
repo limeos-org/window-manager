@@ -56,13 +56,13 @@ static bool is_portal_trigger_area(Portal *portal, PortalTriggerType type, int r
 static void draw_portal_trigger(Portal *portal, PortalTriggerType type)
 {
     cairo_t *cr = portal->frame_cr;
+    const Theme *theme = get_portal_theme(portal);
 
     // Calculate trigger position.
     int trigger_x, trigger_y;
     calc_portal_trigger_pos(portal, type, &trigger_x, &trigger_y);
 
     // Define the drawing stroke style.
-    const Theme *theme = get_current_theme();
     cairo_set_source_rgb(cr,
         theme->titlebar_text.r,
         theme->titlebar_text.g,

@@ -179,14 +179,6 @@ typedef struct {
 } PortalFocusedEvent;
 
 /**
- * An event that gets triggered when the system theme changes.
- */
-#define ThemeChanged 145
-typedef struct {
-    int type;
-} ThemeChangedEvent;
-
-/**
  * An event that gets triggered when the active workspace changes.
  */
 #define WorkspaceSwitched 146
@@ -222,9 +214,6 @@ typedef union {
     PrepareEvent prepare;
     InitializeEvent initialize;
     UpdateEvent update;
-
-    // Theme events.
-    ThemeChangedEvent theme_changed;
 
     // Workspace events.
     WorkspaceSwitchedEvent workspace_switched;

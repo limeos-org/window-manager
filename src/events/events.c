@@ -56,28 +56,15 @@ void initialize_event_loop()
             .tv_usec = remaining_time * 1000
         };
 
-        // Block until an X event or D-Bus message is received, or timeout.
+        // Block until an X event is received, or timeout.
         fd_set read_fd_set;
         FD_ZERO(&read_fd_set);
         int display_fd = ConnectionNumber(display);
-        int dbus_fd = get_theme_dbus_fd();
-        int highest_fd = display_fd;
         FD_SET(display_fd, &read_fd_set);
-        if (dbus_fd >= 0)
-        {
-            FD_SET(dbus_fd, &read_fd_set);
-            if (dbus_fd > highest_fd) highest_fd = dbus_fd;
-        }
-        select(highest_fd + 1, &read_fd_set, NULL, NULL, &timeout);
+        select(display_fd + 1, &read_fd_set, NULL, NULL, &timeout);
 
         // Record when we woke up to enforce spacing on next iteration.
         last_select_time = x_get_current_time();
-
-        // Dispatch D-Bus messages if available.
-        if (dbus_fd >= 0 && FD_ISSET(dbus_fd, &read_fd_set))
-        {
-            dispatch_theme_dbus();
-        }
 
         // Process pending X events in batches. Without a limit, a flood of
         // events (e.g., rapid mouse movement) could starve the Update event,

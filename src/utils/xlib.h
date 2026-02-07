@@ -304,3 +304,34 @@ int x_get_window_desktop(Display *display, Window window);
  * @return - `false` The window was not viewable; focus was not changed.
  */
 bool x_focus_window(Display *display, Window window);
+
+/**
+ * Reads luminance from an already-fetched XImage at (x, y).
+ *
+ * Uses BT.601 coefficients: 0.299*R + 0.587*G + 0.114*B.
+ *
+ * @param image The XImage to read from.
+ * @param x The x coordinate within the image.
+ * @param y The y coordinate within the image.
+ *
+ * @return Luminance value from 0.0 (dark) to 1.0 (light).
+ */
+float x_pixel_luminance(XImage *image, int x, int y);
+
+/**
+ * Samples the average luminance of a rectangular region of a pixmap.
+ *
+ * Fetches the region via XGetImage, computes per-pixel BT.601 luminance,
+ * and returns the average.
+ *
+ * @param display The X11 display.
+ * @param pixmap The pixmap to sample from.
+ * @param x The x offset of the region.
+ * @param y The y offset of the region.
+ * @param width The width of the region in pixels.
+ * @param height The height of the region in pixels.
+ *
+ * @return Average luminance from 0.0 (dark) to 1.0 (light),
+ *         or -1.0 if the region could not be read.
+ */
+float x_average_luminance(Display *display, Pixmap pixmap, int x, int y, int width, int height);

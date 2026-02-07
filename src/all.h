@@ -11,7 +11,6 @@
 #include <X11/extensions/Xfixes.h>
 #include <cairo/cairo.h>
 #include <cairo/cairo-xlib.h>
-#include <dbus/dbus.h>
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <execinfo.h>

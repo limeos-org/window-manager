@@ -6,29 +6,6 @@
 #include "../all.h"
 
 /**
- * Reads luminance from an already-fetched XImage at (x, y).
- *
- * Uses BT.601 coefficients: 0.299*R + 0.587*G + 0.114*B.
- *
- * @param image The XImage to read from.
- * @param x The x coordinate within the image.
- * @param y The y coordinate within the image.
- *
- * @return Luminance value from 0.0 (dark) to 1.0 (light).
- */
-static float pixel_luminance(XImage *image, int x, int y)
-{
-    // Retrieve the pixel value at the given coordinates.
-    unsigned long pixel = XGetPixel(image, x, y);
-
-    // Extract RGB components and compute luminance.
-    unsigned char r = (pixel >> 16) & 0xFF;
-    unsigned char g = (pixel >> 8) & 0xFF;
-    unsigned char b = pixel & 0xFF;
-    return (float)(0.299 * r + 0.587 * g + 0.114 * b) / 255.0f;
-}
-
-/**
  * Draws a straight border line with per-pixel adaptive coloring.
  *
  * Walks the strip pixel by pixel, groups consecutive same-color
@@ -59,7 +36,7 @@ static void draw_adaptive_line(
 
     // Initialize run tracking with the first pixel's luminance.
     int run_start = 0;
-    float luminance = pixel_luminance(strip, 0, 0);
+    float luminance = x_pixel_luminance(strip, 0, 0);
     bool run_dark = (luminance > 0.5f);
 
     // Walk the strip and flush runs on color transitions.
@@ -72,7 +49,7 @@ static void draw_adaptive_line(
         {
             int strip_x = vertical ? 0 : i;
             int strip_y = vertical ? i : 0;
-            float current_luminance = pixel_luminance(strip, strip_x, strip_y);
+            float current_luminance = x_pixel_luminance(strip, strip_x, strip_y);
             current_dark = (current_luminance > 0.5f);
         }
 
@@ -111,7 +88,7 @@ static double border_color_at(XImage *strip, int index, bool vertical)
     int strip_y = vertical ? index : 0;
 
     // Sample luminance and return the contrasting border color.
-    float luminance = pixel_luminance(strip, strip_x, strip_y);
+    float luminance = x_pixel_luminance(strip, strip_x, strip_y);
     return (luminance > 0.5f) ? 0.0 : 1.0;
 }
 
@@ -155,7 +132,7 @@ void draw_framed_border(cairo_t *cr, Portal *portal, Pixmap pixmap)
 {
     // Retrieve display, theme, and geometry values.
     Display *display = DefaultDisplay;
-    const Theme *theme = get_current_theme();
+    const Theme *theme = get_portal_theme(portal);
     double x = portal->geometry.x_root;
     double y = portal->geometry.y_root;
     double width = portal->geometry.width;
@@ -300,7 +277,7 @@ void draw_frameless_border(cairo_t *cr, Portal *portal, Pixmap pixmap)
 {
     // Retrieve display, theme, and geometry values.
     Display *display = DefaultDisplay;
-    const Theme *theme = get_current_theme();
+    const Theme *theme = get_portal_theme(portal);
     double x = portal->geometry.x_root;
     double y = portal->geometry.y_root;
     double width = portal->geometry.width;

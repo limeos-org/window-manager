@@ -12,7 +12,7 @@ static void set_portal_title(Portal *portal, const char *title)
 
 void draw_portal_title(Portal *portal)
 {
-    const Theme *theme = get_current_theme();
+    const Theme *theme = get_portal_theme(portal);
     cairo_t *cr = portal->frame_cr;
     unsigned int width = portal->geometry.width;
 

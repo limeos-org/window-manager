@@ -7,7 +7,7 @@
 
 // Configuration keys and defaults (theme).
 #define CFG_KEY_THEME "theme"
-#define CFG_DEFAULT_THEME "listen"
+#define CFG_DEFAULT_THEME "adaptive"
 
 // Configuration keys and defaults (background_mode).
 #define CFG_KEY_BACKGROUND_MODE "background_mode"

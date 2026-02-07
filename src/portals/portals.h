@@ -52,6 +52,7 @@ typedef struct Portal {
     bool top_level;                  // Whether this portal is a child of root.
     struct Portal *transient_for;    // Parent portal if transient, else NULL.
     PortalVisibility visibility;     // Lifecycle visibility state.
+    ThemeVariant theme;              // Resolved light or dark theme variant.
     bool override_redirect;          // Whether client manages its own geometry.
     bool fullscreen;
     int workspace;                   // -1 if unassigned.

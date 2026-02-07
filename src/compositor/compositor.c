@@ -286,8 +286,7 @@ static void draw_portal(Portal *portal)
     Visual *visual = has_frame ? portal->frame_visual : portal->client_visual;
 
     // Get the window to composite (frame if it exists, otherwise client).
-    Window target_window = has_frame ?
-        portal->frame_window : portal->client_window;
+    Window target_window = has_frame ? portal->frame_window : portal->client_window;
 
     // Acquire the window pixmap as a Cairo surface.
     // Override-redirect windows need viewability checks because clients
@@ -300,6 +299,28 @@ static void draw_portal(Portal *portal)
         portal->override_redirect, &pixmap
     );
     if (window_surface == NULL) return;
+
+    // Sample client content luminance to resolve the portal's theme
+    // variant. Only applies in adaptive mode for framed portals.
+    if (has_frame && get_theme_mode() == THEME_MODE_ADAPTIVE)
+    {
+        float luminance = x_average_luminance(
+            display, pixmap,
+            0, PORTAL_TITLE_BAR_HEIGHT, portal->geometry.width, 1
+        );
+        if (luminance >= 0.0f)
+        {
+            ThemeVariant variant = (luminance > 0.5f) ? THEME_VARIANT_LIGHT : THEME_VARIANT_DARK;
+            if (variant != portal->theme)
+            {
+                portal->theme = variant;
+
+                // Redraw the frame so the titlebar reflects the new
+                // variant before it gets composited below.
+                draw_portal_frame(portal);
+            }
+        }
+    }
 
     // Draw the window surface to the off-screen buffer based on decoration kind.
     PortalDecoration kind = get_portal_decoration_kind(portal);
