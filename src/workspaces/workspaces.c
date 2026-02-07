@@ -12,6 +12,42 @@ static int current_workspace = 0;
 /** Tracks the last focused portal on each workspace for focus restoration. */
 static Portal *last_focused_portal[MAX_WORKSPACES] = {NULL};
 
+/**
+ * Moves a single portal to the given workspace without any group or limit
+ * logic. Caller is responsible for validation and workspace-limit checks.
+ */
+static void move_single_portal_to_workspace(Portal *portal, int workspace)
+{
+    if (portal->workspace == workspace) return;
+
+    // Store old workspace for the event.
+    int old_workspace = portal->workspace;
+
+    // Suspend if currently visible on active workspace.
+    if (portal->workspace == current_workspace &&
+        portal->visibility == PORTAL_VISIBLE
+    ) {
+        suspend_portal(portal);
+    }
+
+    // Update workspace assignment.
+    portal->workspace = workspace;
+
+    // Map if target is the active workspace.
+    if (workspace == current_workspace)
+    {
+        map_portal(portal);
+    }
+
+    // Notify listeners of the workspace change.
+    call_event_handlers((Event*)&(PortalWorkspaceChangedEvent){
+        .type = PortalWorkspaceChanged,
+        .portal = portal,
+        .old_workspace = old_workspace,
+        .new_workspace = workspace
+    });
+}
+
 int get_current_workspace()
 {
     return current_workspace;
@@ -44,10 +80,17 @@ void move_portal_to_workspace(Portal *portal, int workspace)
 {
     if (portal == NULL) return;
     if (workspace < 0 || workspace >= MAX_WORKSPACES) return;
-    if (portal->workspace == workspace) return;
 
-    // Deny move to a full workspace (transients are exempt).
-    if (portal->transient_for == NULL &&
+    // Find the root of this portal's transient group.
+    Portal *root = find_portal_transient_root(portal);
+
+    // Nothing to do if the root is already on the target workspace (the
+    // entire group is assumed to be co-located).
+    if (root->workspace == workspace) return;
+
+    // Deny move to a full workspace (only non-transient root counts toward
+    // the limit, skip the check if the root is already on that workspace).
+    if (root->transient_for == NULL &&
         count_workspace_portals(workspace) >= MAX_WORKSPACE_PORTALS)
     {
         LOG_WARNING(
@@ -57,32 +100,22 @@ void move_portal_to_workspace(Portal *portal, int workspace)
         return;
     }
 
-    // Store old workspace for the event.
-    int old_workspace = portal->workspace;
+    // Move the root portal first.
+    move_single_portal_to_workspace(root, workspace);
 
-    // Suspend if currently visible on active workspace.
-    if (portal->workspace == current_workspace &&
-        portal->visibility == PORTAL_VISIBLE
-    ) {
-        suspend_portal(portal);
-    }
-
-    // Update workspace assignment.
-    portal->workspace = workspace;
-
-    // Map if target is the active workspace.
-    if (workspace == current_workspace)
+    // Move all transient children belonging to the same group.
+    Portal *portals = get_unsorted_portals();
+    for (unsigned int i = 0; i < MAX_PORTALS; i++)
     {
-        map_portal(portal);
+        Portal *candidate = &portals[i];
+        if (!candidate->active) continue;
+        if (!candidate->initialized) continue;
+        if (candidate->transient_for == NULL) continue;
+        if (find_portal_transient_root(candidate) == root)
+        {
+            move_single_portal_to_workspace(candidate, workspace);
+        }
     }
-
-    // Notify listeners of the workspace change.
-    call_event_handlers((Event*)&(PortalWorkspaceChangedEvent){
-        .type = PortalWorkspaceChanged,
-        .portal = portal,
-        .old_workspace = old_workspace,
-        .new_workspace = workspace
-    });
 }
 
 void switch_workspace(int workspace)
