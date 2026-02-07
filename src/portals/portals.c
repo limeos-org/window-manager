@@ -576,6 +576,11 @@ void map_portal(Portal *portal)
             // Set `WM_STATE` to NormalState as required by ICCCM.
             x_set_wm_state(display, portal->client_window, 1);
         }
+
+        // Ensure map requests are processed before transitioning to
+        // visible. Downstream handlers (e.g. focus) need the windows
+        // to be viewable.
+        XSync(display, False);
     }
 
     // Transition the portal to visible.

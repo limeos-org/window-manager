@@ -167,12 +167,7 @@ void switch_workspace(int workspace)
     if (to_focus != NULL)
     {
         // Focus the portal.
-        XSetInputFocus(
-            display,
-            to_focus->client_window,
-            RevertToPointerRoot,
-            CurrentTime
-        );
+        x_focus_window(display, to_focus->client_window);
         raise_portal(to_focus);
         call_event_handlers((Event*)&(PortalFocusedEvent){
             .type = PortalFocused,
@@ -182,8 +177,7 @@ void switch_workspace(int workspace)
     else
     {
         // No portals on this workspace, clear focus to root.
-        Window root = DefaultRootWindow(display);
-        XSetInputFocus(display, root, RevertToPointerRoot, CurrentTime);
+        x_focus_window(display, DefaultRootWindow(display));
     }
 
     // Notify listeners of the workspace switch.

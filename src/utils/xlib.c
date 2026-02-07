@@ -572,3 +572,14 @@ int x_get_window_desktop(Display *display, Window window)
 
     return desktop;
 }
+
+bool x_focus_window(Display *display, Window window)
+{
+    // Verify the window is viewable before setting focus.
+    XWindowAttributes attrs;
+    if (!XGetWindowAttributes(display, window, &attrs)) return false;
+    if (attrs.map_state != IsViewable) return false;
+
+    XSetInputFocus(display, window, RevertToPointerRoot, CurrentTime);
+    return true;
+}

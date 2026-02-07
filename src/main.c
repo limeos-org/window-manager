@@ -70,7 +70,7 @@ int main()
     x_set_default_display(display);
 
     // Set input focus on the root window.
-    XSetInputFocus(display, DefaultRootWindow(display), RevertToParent, CurrentTime);
+    x_focus_window(display, DefaultRootWindow(display));
 
     // Set a custom X11 error handler.
     XSetErrorHandler(custom_x_error_handler);

@@ -5,12 +5,7 @@ void handle_portal_focus_click(Portal *portal)
     if (portal->visibility != PORTAL_VISIBLE) return;
 
     // Always set keyboard focus (external events can steal it).
-    XSetInputFocus(
-        DefaultDisplay,         // Display
-        portal->client_window,  // Window
-        RevertToPointerRoot,    // Revert To
-        CurrentTime             // Time
-    );
+    x_focus_window(DefaultDisplay, portal->client_window);
 
     // Raise and notify if not already on top.
     if (get_top_portal() == portal) return;
@@ -56,12 +51,7 @@ HANDLE(PortalDestroyed)
     if (next_portal == NULL) return;
 
     // Set keyboard focus to the next portal.
-    XSetInputFocus(
-        DefaultDisplay,
-        next_portal->client_window,
-        RevertToPointerRoot,
-        CurrentTime
-    );
+    x_focus_window(DefaultDisplay, next_portal->client_window);
 
     // Raise and notify.
     raise_portal(next_portal);
@@ -80,12 +70,7 @@ HANDLE(PortalMapped)
     if (portal->override_redirect) return;
 
     // Set keyboard focus to the newly mapped portal.
-    XSetInputFocus(
-        DefaultDisplay,
-        portal->client_window,
-        RevertToPointerRoot,
-        CurrentTime
-    );
+    x_focus_window(DefaultDisplay, portal->client_window);
 
     // Notify.
     call_event_handlers((Event*)&(PortalFocusedEvent){

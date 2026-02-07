@@ -266,3 +266,17 @@ Atom x_get_window_type(Display *display, Window window);
  * @return - `-1` - The property is not set or could not be read.
  */
 int x_get_window_desktop(Display *display, Window window);
+
+/**
+ * Sets input focus to a window, but only if it is currently viewable.
+ *
+ * Avoids the `BadMatch` error that `XSetInputFocus` produces when the
+ * target window is not viewable (e.g. due to map/unmap races).
+ *
+ * @param display The X11 display.
+ * @param window The target window.
+ *
+ * @return - `true` Focus was set successfully.
+ * @return - `false` The window was not viewable; focus was not changed.
+ */
+bool x_focus_window(Display *display, Window window);
