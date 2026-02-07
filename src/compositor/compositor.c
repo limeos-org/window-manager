@@ -144,16 +144,22 @@ static cairo_surface_t *acquire_window_surface(
         }
     }
 
-    // Get the composite pixmap.
+    // Get the composite pixmap. Trap errors because the call can fail
+    // with BadMatch (window not composite-redirected) for rapidly
+    // created/destroyed override-redirect windows. X11 errors are
+    // async, so the pixmap check alone cannot detect the failure.
+    x_trap_errors(display);
     Pixmap pixmap = XCompositeNameWindowPixmap(display, window);
-    if (pixmap == None)
-    {
-        XUngrabServer(display);
-        return NULL;
-    }
+    int error = x_untrap_errors(display);
 
     // Release the server grab.
     XUngrabServer(display);
+
+    // Return early if there was an error or the pixmap is invalid.
+    if (error || pixmap == None)
+    {
+        return NULL;
+    }
 
     // Create a Cairo surface from the pixmap.
     cairo_surface_t *surface = cairo_xlib_surface_create(

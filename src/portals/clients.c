@@ -195,6 +195,9 @@ HANDLE(ConfigureRequest)
     else
     {
         // For non-framed windows, apply configuration changes as requested.
+        // Trap errors because the request can reference a sibling window
+        // that no longer exists (e.g., rapidly destroyed popup).
+        x_trap_errors(display);
         XConfigureWindow(
             display,
             client_window,
@@ -209,6 +212,7 @@ HANDLE(ConfigureRequest)
                 .stack_mode = _event->detail
             }
         );
+        x_untrap_errors(display);
     }
 }
 

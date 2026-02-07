@@ -30,10 +30,6 @@ void initialize_portal(Portal *portal)
     Display *display = DefaultDisplay;
     Window client_window = portal->client_window;
 
-    // Remove the border from the client window, as the window manager will
-    // be responsible for handling all window decorations.
-    XSetWindowBorderWidth(display, client_window, 0);
-
     // Determine the portal title, based on the client window name.
     char portal_title[256] = "Untitled";
     x_get_window_name(display, client_window, portal_title, sizeof(portal_title));
@@ -74,6 +70,14 @@ void initialize_portal(Portal *portal)
         client_height = client_attrs.height;
         portal->client_visual = client_attrs.visual;
         portal->override_redirect = client_attrs.override_redirect;
+    }
+
+    // Remove the border from the client window, as the window manager will
+    // be responsible for handling all window decorations. Skip InputOnly
+    // windows (e.g. GTK grab windows) which don't support border changes.
+    if (client_attrs.class != InputOnly)
+    {
+        XSetWindowBorderWidth(display, client_window, 0);
     }
 
     // Create a frame for the portal, if necessary.

@@ -37,6 +37,30 @@ Display *x_get_default_display();
 Time x_get_current_time();
 
 /**
+ * Begins trapping X11 errors on the given display.
+ *
+ * While a trap is active, errors are silently recorded instead of being
+ * passed to the normal error handler. Call `x_untrap_errors` to end the
+ * trap, flush pending errors via `XSync`, and retrieve the error code.
+ *
+ * @param display The X11 display.
+ *
+ * @warning Not reentrant. Only one trap may be active at a time.
+ */
+void x_trap_errors(Display *display);
+
+/**
+ * Ends an active error trap, syncs with the server, and returns the
+ * trapped error code (or 0 if no error occurred).
+ *
+ * @param display The X11 display.
+ *
+ * @return - `0` - No error occurred during the trap.
+ * @return - `> 0` - The X11 error code of the first trapped error.
+ */
+int x_untrap_errors(Display *display);
+
+/**
  * Retrieves the process ID of the X client that owns the window.
  * 
  * @param display The X11 display.

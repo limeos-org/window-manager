@@ -2,6 +2,16 @@
 
 static Display *default_display = NULL;
 
+static int trapped_error_code = 0;
+static int (*prev_error_handler)(Display *, XErrorEvent *) = NULL;
+
+static int trap_error_handler(Display *display, XErrorEvent *error)
+{
+    (void)display;
+    trapped_error_code = error->error_code;
+    return 0;
+}
+
 void x_set_default_display(Display *display)
 {
     default_display = display;
@@ -17,6 +27,20 @@ Time x_get_current_time()
     struct timeval now;
     gettimeofday(&now, NULL);
     return (now.tv_sec * 1000) + (now.tv_usec / 1000);
+}
+
+void x_trap_errors(Display *display)
+{
+    (void)display;
+    trapped_error_code = 0;
+    prev_error_handler = XSetErrorHandler(trap_error_handler);
+}
+
+int x_untrap_errors(Display *display)
+{
+    XSync(display, False);
+    XSetErrorHandler(prev_error_handler);
+    return trapped_error_code;
 }
 
 pid_t x_get_window_pid(Display *display, Window window)
