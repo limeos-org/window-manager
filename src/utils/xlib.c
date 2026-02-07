@@ -538,3 +538,37 @@ Atom x_get_window_type(Display *display, Window window)
 
     return window_type;
 }
+
+int x_get_window_desktop(Display *display, Window window)
+{
+    // Retrieve the `_NET_WM_DESKTOP` property from the window.
+    unsigned char *data;
+    unsigned long item_count;
+    Atom _NET_WM_DESKTOP = XInternAtom(display, "_NET_WM_DESKTOP", False);
+    int status = XGetWindowProperty(
+        display,                // Display
+        window,                 // Window
+        _NET_WM_DESKTOP,        // Property
+        0, 1,                   // Offset, length
+        False,                  // Delete
+        XA_CARDINAL,            // Type
+        &(Atom){0},             // Response type (unused)
+        &(int){0},              // Response format (unused)
+        &item_count,            // Item count
+        &(unsigned long){0},    // Bytes after (unused)
+        &data                   // Data
+    );
+    if (status != Success || data == NULL || item_count != 1)
+    {
+        if (data != NULL) XFree(data);
+        return -1;
+    }
+
+    // Store the desktop index, so we can free the property data.
+    int desktop = (int)*(uint32_t*)data;
+
+    // Free the property data.
+    XFree(data);
+
+    return desktop;
+}

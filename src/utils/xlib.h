@@ -255,3 +255,14 @@ bool x_window_wants_decorations_ewmh(Display *display, Atom window_type);
  * @return - _NET_WM_WINDOW_TYPE_NORMAL if the property is not set.
  */
 Atom x_get_window_type(Display *display, Window window);
+
+/**
+ * Retrieves the workspace index from the _NET_WM_DESKTOP property.
+ *
+ * @param display The X11 display.
+ * @param window The target window.
+ *
+ * @return - `>= 0` - The workspace index.
+ * @return - `-1` - The property is not set or could not be read.
+ */
+int x_get_window_desktop(Display *display, Window window);

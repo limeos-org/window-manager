@@ -79,8 +79,10 @@ HANDLE(MapRequest)
 {
     XMapRequestEvent *_event = &event->xmaprequest;
 
-    // Ensure the event came from a portal client window.
-    Portal *portal = find_portal_by_window(_event->window);
+    // Find or create a portal for this window. A portal may not exist
+    // for it if the window was created before the WM started (e.g., an
+    // unmapped window from a previous session).
+    Portal *portal = find_or_create_portal(_event->window);
     if (portal == NULL || portal->client_window != _event->window) return;
 
     // Populate the portal's `transient_for` value for the limit check below.
@@ -112,8 +114,10 @@ HANDLE(MapNotify)
 {
     XMapEvent *_event = &event->xmap;
 
-    // Ensure the event came from a portal client window.
-    Portal *portal = find_portal_by_window(_event->window);
+    // Find or create a portal for this window. A portal may not exist
+    // for override-redirect windows from a previous session (they
+    // bypass MapRequest, so the on-demand creation there doesn't help).
+    Portal *portal = find_or_create_portal(_event->window);
     if (portal == NULL || portal->client_window != _event->window) return;
 
     // Skip if already visible (avoids re-entrance from our own map calls).
@@ -130,6 +134,18 @@ HANDLE(UnmapNotify)
     // Ensure the event came from a portal client window.
     Portal *portal = find_portal_by_window(_event->window);
     if (portal == NULL || portal->client_window != _event->window) return;
+
+    // For framed portals, ignore non-synthetic UnmapNotify events
+    // delivered on the root window. These are reparent artifacts
+    // (the X server unmaps a window when reparenting it). Legitimate
+    // client withdrawals arrive as synthetic events on root (ICCCM
+    // 4.1.4) or as real events on the frame (SubstructureNotifyMask).
+    if (is_portal_frame_valid(portal)
+        && _event->event == DefaultRootWindow(DefaultDisplay)
+        && !_event->send_event)
+    {
+        return;
+    }
 
     // Ignore WM-initiated unmaps (suspend). Only handle client withdrawals.
     if (portal->visibility != PORTAL_VISIBLE) return;

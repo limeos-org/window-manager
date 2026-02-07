@@ -14,120 +14,15 @@ static PortalRegistry registry = {
 
 static Portal *top_portal = NULL;
 
-Portal *create_portal(Window client_window)
+static void raise_portal_window(Portal *portal)
 {
-    // Choose which client window events we should listen for.
-    XSelectInput(DefaultDisplay, client_window, SubstructureNotifyMask);
+    // Determine which window to raise.
+    Window target_window = (is_portal_frame_valid(portal))
+        ? portal->frame_window
+        : portal->client_window;
 
-    // Find the first inactive slot in the registry.
-    int slot = -1;
-    for (int i = 0; i < MAX_PORTALS; i++)
-    {
-        if (!registry.unsorted[i].active)
-        {
-            slot = i;
-            break;
-        }
-    }
-    if (slot == -1)
-    {
-        LOG_ERROR("Could not register portal, maximum portal count reached.");
-        return NULL;
-    }
-
-    // Allocate memory for the portal title.
-    char *title = strdup("Untitled");
-    if (title == NULL)
-    {
-        LOG_ERROR("Could not register portal, memory allocation failed.");
-        return NULL;
-    }
-
-    // Add the portal to the registry.
-    registry.unsorted[slot] = (Portal){
-        .active = true,
-        .title = title,
-        .client_window_type = None,
-        .transient_for = NULL,
-        .initialized = false,
-        .visibility = PORTAL_HIDDEN,
-        .top_level = false,
-        .fullscreen = false,
-        .workspace = -1,
-        .geometry = {0, 0, 1, 1},
-        .geometry_backup = {0, 0, 0, 0},
-        .frame_window = None,
-        .frame_cr = NULL,
-        .client_window = client_window,
-        .client_visual = NULL,
-        .frame_visual = NULL
-    };
-
-    // Store the portal in a variable for easier access.
-    Portal *portal = &registry.unsorted[slot];
-
-    // Increment active count.
-    registry.active_count++;
-
-    sort_portals();
-
-    // Call all event handlers of the PortalCreated event.
-    call_event_handlers((Event*)&(PortalCreatedEvent){
-        .type = PortalCreated,
-        .portal = portal
-    });
-
-    return portal;
-}
-
-void destroy_portal(Portal *portal)
-{
-    // Destroy the client window.
-    if (is_portal_client_valid(portal))
-    {
-        destroy_portal_client(portal);
-        if (is_portal_client_valid(portal)) return;
-    }
-
-    // Destroy the frame window.
-    if (is_portal_frame_valid(portal))
-    {
-        destroy_portal_frame(portal);
-        if (is_portal_frame_valid(portal)) return;
-    }
-
-    // Clear top portal tracking if this was it.
-    if (top_portal == portal) top_portal = NULL;
-
-    // Call all event handlers of the PortalDestroyed event.
-    // This is done before unregistering so handlers can access the portal.
-    call_event_handlers((Event*)&(PortalDestroyedEvent){
-        .type = PortalDestroyed,
-        .portal = portal
-    });
-
-    // Clear transient references to this portal.
-    for (int i = 0; i < MAX_PORTALS; i++)
-    {
-        if (!registry.unsorted[i].active) continue;
-        if (registry.unsorted[i].transient_for == portal)
-        {
-            registry.unsorted[i].transient_for = NULL;
-        }
-    }
-
-    // Free the allocated memory for the title.
-    free(portal->title);
-    portal->title = NULL;
-
-    // Mark the portal slot as inactive (tombstone).
-    portal->active = false;
-
-    // Decrease the active count.
-    registry.active_count--;
-
-    // Re-sort the portals.
-    sort_portals();
+    // Raise the window.
+    XRaiseWindow(DefaultDisplay, target_window);
 }
 
 void initialize_portal(Portal *portal)
@@ -204,64 +99,118 @@ void initialize_portal(Portal *portal)
     });
 }
 
-void sort_portals()
+Portal *create_portal(Window client_window)
 {
-    Display *display = DefaultDisplay;
-    Window root_window = DefaultRootWindow(display);
+    // Choose which client window events we should listen for.
+    XSelectInput(DefaultDisplay, client_window, SubstructureNotifyMask);
 
-    // Retrieve all windows in stacking order.
-    Window *windows = NULL;
-    unsigned int window_count = 0;
-    int status = x_query_tree_recursively(
-        display,        // Display
-        root_window,    // Parent
-        &windows,       // Children
-        &window_count   // Children count
-    );
-    if (status != 0)
+    // Find the first inactive slot in the registry.
+    int slot = -1;
+    for (int i = 0; i < MAX_PORTALS; i++)
     {
-        LOG_ERROR("Could not sort portals, tree query failed (%d).", status);
-        free(windows);
-        return;
-    }
-
-    // Build sorted portals array from windows array.
-    int portals_added = 0;
-    for (int i = 0; i < (int)window_count; i++)
-    {
-        // Ensure the window belongs to a portal.
-        Portal *portal = find_portal_by_window(windows[i]);
-        if (portal == NULL) continue;
-        if (!portal->active) continue;
-
-        // Ensure we only handle client windows, and not frame windows as well,
-        // preventing duplicate entries in the sorted portals array.
-        if (windows[i] != portal->client_window) continue;
-
-        // Add portal to the sorted array.
-        registry.sorted[portals_added] = portal;
-        portals_added++;
-    }
-
-    // Synchronize top_portal to the topmost visible portal.
-    top_portal = NULL;
-    for (int i = portals_added - 1; i >= 0; i--)
-    {
-        if (registry.sorted[i]->visibility == PORTAL_VISIBLE)
+        if (!registry.unsorted[i].active)
         {
-            top_portal = registry.sorted[i];
+            slot = i;
             break;
         }
     }
-
-    // Clear remaining slots, if any.
-    while (portals_added < MAX_PORTALS) {
-        registry.sorted[portals_added] = NULL;
-        portals_added++;
+    if (slot == -1)
+    {
+        LOG_ERROR("Could not register portal, maximum portal count reached.");
+        return NULL;
     }
 
-    // Cleanup.
-    free(windows);
+    // Allocate memory for the portal title.
+    char *title = strdup("Untitled");
+    if (title == NULL)
+    {
+        LOG_ERROR("Could not register portal, memory allocation failed.");
+        return NULL;
+    }
+
+    // Add the portal to the registry.
+    registry.unsorted[slot] = (Portal){
+        .active = true,
+        .title = title,
+        .client_window_type = None,
+        .transient_for = NULL,
+        .initialized = false,
+        .visibility = PORTAL_HIDDEN,
+        .top_level = false,
+        .fullscreen = false,
+        .workspace = -1,
+        .geometry = {0, 0, 1, 1},
+        .geometry_backup = {0, 0, 0, 0},
+        .frame_window = None,
+        .frame_cr = NULL,
+        .client_window = client_window,
+        .client_visual = NULL,
+        .frame_visual = NULL
+    };
+
+    // Store the portal in a variable for easier access.
+    Portal *portal = &registry.unsorted[slot];
+
+    // Increment active count.
+    registry.active_count++;
+
+    // Call all event handlers of the PortalCreated event.
+    call_event_handlers((Event*)&(PortalCreatedEvent){
+        .type = PortalCreated,
+        .portal = portal
+    });
+
+    return portal;
+}
+
+void destroy_portal(Portal *portal)
+{
+    // Destroy the client window.
+    if (is_portal_client_valid(portal))
+    {
+        destroy_portal_client(portal);
+        if (is_portal_client_valid(portal)) return;
+    }
+
+    // Destroy the frame window.
+    if (is_portal_frame_valid(portal))
+    {
+        destroy_portal_frame(portal);
+        if (is_portal_frame_valid(portal)) return;
+    }
+
+    // Clear top portal tracking if this was it.
+    if (top_portal == portal) top_portal = NULL;
+
+    // Call all event handlers of the PortalDestroyed event.
+    // This is done before unregistering so handlers can access the portal.
+    call_event_handlers((Event*)&(PortalDestroyedEvent){
+        .type = PortalDestroyed,
+        .portal = portal
+    });
+
+    // Clear transient references to this portal.
+    for (int i = 0; i < MAX_PORTALS; i++)
+    {
+        if (!registry.unsorted[i].active) continue;
+        if (registry.unsorted[i].transient_for == portal)
+        {
+            registry.unsorted[i].transient_for = NULL;
+        }
+    }
+
+    // Free the allocated memory for the title.
+    free(portal->title);
+    portal->title = NULL;
+
+    // Mark the portal slot as inactive (tombstone).
+    portal->active = false;
+
+    // Decrease the active count.
+    registry.active_count--;
+
+    // Re-sort the portals.
+    sort_portals();
 }
 
 void move_portal(Portal *portal, int x_root, int y_root)
@@ -326,11 +275,11 @@ void move_portal(Portal *portal, int x_root, int y_root)
         // Move the target window.
         XMoveWindow(display, target_window, x_parent, y_parent);
 
-        // According to the ICCCM (Sections 4.1.5 and 4.2.3), when a window 
-        // manager moves a reparented client window, it is responsible for 
-        // sending a synthetic ConfigureNotify event to the client with the 
+        // According to the ICCCM (Sections 4.1.5 and 4.2.3), when a window
+        // manager moves a reparented client window, it is responsible for
+        // sending a synthetic ConfigureNotify event to the client with the
         // windows new dimensions and position relative to root.
-        
+
         if (is_portal_frame_valid(portal))
         {
             // Retrieve the client window dimensions.
@@ -560,17 +509,6 @@ Portal *get_top_portal()
     return top_portal;
 }
 
-static void raise_portal_window(Portal *portal)
-{
-    // Determine which window to raise.
-    Window target_window = (is_portal_frame_valid(portal))
-        ? portal->frame_window
-        : portal->client_window;
-
-    // Raise the window.
-    XRaiseWindow(DefaultDisplay, target_window);
-}
-
 void raise_portal(Portal *portal)
 {
     // Ensure the portal has been initialized.
@@ -646,10 +584,10 @@ void map_portal(Portal *portal)
     // Populate the portal's `transient_for` so positioning can use it.
     populate_portal_transient_for(portal);
 
-    // Apply `WM_NORMAL_HINTS` position if specified by the client, otherwise 
-    // center the portal relative to either the screen (normal) or parent 
+    // Apply `WM_NORMAL_HINTS` position if specified by the client, otherwise
+    // center the portal relative to either the screen (normal) or parent
     // (transient). Override-redirect windows position themselves, so skip them.
-    // Only do this on first map to preserve portal position across when 
+    // Only do this on first map to preserve portal position across when
     // suspending and revealing (Fullscreen, Workspace switching).
     if (!portal->override_redirect && first_map)
     {
@@ -704,9 +642,14 @@ void map_portal(Portal *portal)
     synchronize_portal(portal);
 
     // Raise the portal above its parent if applicable, as per ICCCM.
+    // `raise_portal()` calls `sort_portals()` internally.
     if (portal->transient_for != NULL)
     {
         raise_portal(portal);
+    }
+    else
+    {
+        sort_portals();
     }
 
     // Call all event handlers of the PortalMapped event.
@@ -751,34 +694,37 @@ void suspend_portal(Portal *portal)
 {
     Display *display = DefaultDisplay;
 
-    // Only suspend portals that are currently visible.
-    if (portal->visibility != PORTAL_VISIBLE) return;
+    // Only visible and hidden portals can be suspended.
+    if (portal->visibility == PORTAL_SUSPENDED) return;
 
-    // Unmap non-override-redirect portals.
-    if (!portal->override_redirect)
+    bool visible_before_suspend = (portal->visibility == PORTAL_VISIBLE);
+
+    // Unmap non-override-redirect portals that are currently visible.
+    if (visible_before_suspend && !portal->override_redirect)
     {
-        // Unmap the frame window, if it exists.
         if (is_portal_frame_valid(portal))
         {
             XUnmapWindow(display, portal->frame_window);
         }
 
-        // Unmap the client window, if it exists.
         if (is_portal_client_valid(portal))
         {
             XUnmapWindow(display, portal->client_window);
         }
     }
 
-    // Transition the portal to suspended (WM-hidden, client still
-    // wants visible).
+    // Transition the portal to suspended.
     portal->visibility = PORTAL_SUSPENDED;
 
-    // Call all event handlers of the PortalUnmapped event.
-    call_event_handlers((Event*)&(PortalUnmappedEvent){
-        .type = PortalUnmapped,
-        .portal = portal
-    });
+    // Only fire `PortalUnmapped` when transitioning from visible.
+    // Hidden -> suspended is a pre-map deferral, not an unmap.
+    if (visible_before_suspend)
+    {
+        call_event_handlers((Event*)&(PortalUnmappedEvent){
+            .type = PortalUnmapped,
+            .portal = portal
+        });
+    }
 }
 
 void reveal_portal(Portal *portal)
@@ -813,6 +759,66 @@ Portal **get_sorted_portals(unsigned int *out_count)
     return registry.sorted;
 }
 
+void sort_portals()
+{
+    Display *display = DefaultDisplay;
+    Window root_window = DefaultRootWindow(display);
+
+    // Retrieve all windows in stacking order.
+    Window *windows = NULL;
+    unsigned int window_count = 0;
+    int status = x_query_tree_recursively(
+        display,        // Display
+        root_window,    // Parent
+        &windows,       // Children
+        &window_count   // Children count
+    );
+    if (status != 0)
+    {
+        LOG_ERROR("Could not sort portals, tree query failed (%d).", status);
+        free(windows);
+        return;
+    }
+
+    // Build sorted portals array from windows array.
+    int portals_added = 0;
+    for (int i = 0; i < (int)window_count; i++)
+    {
+        // Ensure the window belongs to a portal.
+        Portal *portal = find_portal_by_window(windows[i]);
+        if (portal == NULL) continue;
+        if (!portal->active) continue;
+
+        // Ensure we only handle client windows, and not frame windows as well,
+        // preventing duplicate entries in the sorted portals array.
+        if (windows[i] != portal->client_window) continue;
+
+        // Add portal to the sorted array.
+        registry.sorted[portals_added] = portal;
+        portals_added++;
+    }
+
+    // Synchronize top_portal to the topmost visible portal.
+    top_portal = NULL;
+    for (int i = portals_added - 1; i >= 0; i--)
+    {
+        if (registry.sorted[i]->visibility == PORTAL_VISIBLE)
+        {
+            top_portal = registry.sorted[i];
+            break;
+        }
+    }
+
+    // Clear remaining slots, if any.
+    while (portals_added < MAX_PORTALS) {
+        registry.sorted[portals_added] = NULL;
+        portals_added++;
+    }
+
+    // Cleanup.
+    free(windows);
+}
+
 Portal *find_portal_by_window(Window window)
 {
     // Iterate over the unsorted portals to find the portal associated with
@@ -830,6 +836,22 @@ Portal *find_portal_by_window(Window window)
         }
     }
     return NULL;
+}
+
+Portal *find_or_create_portal(Window window)
+{
+    Portal *portal = find_portal_by_window(window);
+    if (portal != NULL) return portal;
+
+    Display *display = DefaultDisplay;
+    Window root_window = DefaultRootWindow(display);
+
+    pid_t pid = x_get_window_pid(display, window);
+    if (pid == getpid()) return NULL;
+
+    if (x_get_window_parent(display, window) != root_window) return NULL;
+
+    return create_portal(window);
 }
 
 Portal *find_portal_at_pos(int x_root, int y_root)
@@ -883,6 +905,67 @@ void populate_portal_transient_for(Portal *portal)
     }
 }
 
+void adopt_existing_portal_windows()
+{
+    Display *display = DefaultDisplay;
+    Window root_window = DefaultRootWindow(display);
+
+    // Grab the server to prevent events while scanning.
+    XGrabServer(display);
+
+    // Query all children of the root window (bottom-to-top stacking order).
+    Window *children = NULL;
+    unsigned int child_count = 0;
+    XQueryTree(display, root_window, &(Window){0}, &(Window){0}, &children, &child_count);
+
+    for (unsigned int i = 0; i < child_count; i++)
+    {
+        // Skip windows that are override-redirect or not visible.
+        XWindowAttributes attrs;
+        if (!XGetWindowAttributes(display, children[i], &attrs)) continue;
+        if (attrs.override_redirect) continue;
+        if (attrs.map_state != IsViewable) continue;
+
+        // Skip windows owned by this WM process.
+        pid_t pid = x_get_window_pid(display, children[i]);
+        if (pid == getpid()) continue;
+
+        // Create a portal for this window.
+        Portal *portal = create_portal(children[i]);
+        if (portal == NULL) continue;
+
+        // Read `_NET_WM_DESKTOP` to restore the workspace assignment.
+        int desktop = x_get_window_desktop(display, children[i]);
+        if (desktop >= 0 && desktop < MAX_WORKSPACES)
+        {
+            portal->workspace = desktop;
+        }
+
+        // Initialize the portal (captures geometry, creates frame, fires events).
+        initialize_portal(portal);
+
+        // Map portals on the current workspace; suspend others.
+        // Adoption intentionally bypasses the workspace portal limit
+        // to avoid discarding existing windows on WM restart.
+        if (portal->workspace == get_current_workspace())
+        {
+            map_portal(portal);
+        }
+        else
+        {
+            suspend_portal(portal);
+        }
+    }
+
+    XFree(children);
+
+    // Ungrab the server so events can be processed again.
+    XUngrabServer(display);
+
+    // Synchronize stacking order once after all portals are adopted.
+    sort_portals();
+}
+
 PortalDecoration get_portal_decoration_kind(Portal *portal)
 {
     // Framed windows get full decorations.
@@ -916,4 +999,9 @@ PortalDecoration get_portal_decoration_kind(Portal *portal)
     }
 
     return PORTAL_DECORATION_NONE;
+}
+
+HANDLE(Initialize)
+{
+    adopt_existing_portal_windows();
 }

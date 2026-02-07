@@ -67,11 +67,6 @@ typedef struct Portal {
 } Portal;
 
 /**
- * Sorts portals in the registry based on their stacking order.
- */
-void sort_portals();
-
-/**
  * Creates a portal and registers it to the portal registry.
  * 
  * @param client_window The client window to create the portal from.
@@ -152,9 +147,10 @@ void unmap_portal(Portal *portal);
  * Suspends a portal by unmapping it from the screen without changing
  * the client's visibility intent.
  *
- * Transitions a PORTAL_VISIBLE portal to PORTAL_SUSPENDED. The portal
- * will be revealed when the workspace is re-entered. Has no effect if
- * the portal is not PORTAL_VISIBLE.
+ * Transitions a `PORTAL_VISIBLE` or `PORTAL_HIDDEN` portal to
+ * `PORTAL_SUSPENDED`. Visible portals are unmapped and fire `PortalUnmapped`;
+ * hidden portals are silently deferred. Has no effect if the portal is already
+ * `PORTAL_SUSPENDED`.
  *
  * @param portal The portal to suspend.
  */
@@ -207,6 +203,11 @@ Portal *get_unsorted_portals();
 Portal **get_sorted_portals(unsigned int *out_count);
 
 /**
+ * Sorts portals in the registry based on their stacking order.
+ */
+void sort_portals();
+
+/**
  * Finds a portal in the portal registry using the `window` provided.
  * 
  * @param window A client or frame window.
@@ -215,6 +216,19 @@ Portal **get_sorted_portals(unsigned int *out_count);
  * @return - `NULL` The portal could not be found.
  */
 Portal *find_portal_by_window(Window window);
+
+/**
+ * Finds a portal by window, or creates one if it does not exist.
+ *
+ * Rejects windows owned by this WM process and windows that are not
+ * direct children of root.
+ *
+ * @param window A client window.
+ *
+ * @return - `Portal*` The portal was found or created.
+ * @return - `NULL` The window was rejected or creation failed.
+ */
+Portal *find_or_create_portal(Window window);
 
 /**
  * Finds a portal in the portal registry located at the specified position.
@@ -245,6 +259,13 @@ Portal *find_portal_transient_root(Portal *portal);
  * @note Has no effect if the relationship is already resolved.
  */
 void populate_portal_transient_for(Portal *portal);
+
+/**
+ * Scans the X server for existing top-level windows and adopts them
+ * as portals. Called once at startup to re-manage windows from a
+ * previous WM session.
+ */
+void adopt_existing_portal_windows();
 
 /**
  * Determines the decoration kind for a portal.
