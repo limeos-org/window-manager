@@ -116,6 +116,10 @@ void move_portal_to_workspace(Portal *portal, int workspace)
             move_single_portal_to_workspace(candidate, workspace);
         }
     }
+
+    // Record the moved portal as the last focused on the target workspace
+    // so it receives focus when the user switches there.
+    last_focused_portal[workspace] = portal;
 }
 
 void switch_workspace(int workspace)
