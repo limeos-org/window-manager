@@ -50,7 +50,7 @@ void create_portal_frame(Portal *portal)
         height,         // Height
         0,              // Border width
         0,              // Border color
-        0               // Background color
+        0xFFFFFF        // Background color
     );
 
     // Choose which frame window events we should listen for.
@@ -111,6 +111,12 @@ void draw_portal_frame(Portal *portal)
     cairo_t *cr = portal->frame_cr;
     unsigned int width = portal->geometry.width;
     unsigned int height = portal->geometry.height;
+
+    // Match the frame window background to the theme so that
+    // unpainted areas (e.g., during resize) blend with the titlebar.
+    unsigned long bg = (theme->variant == THEME_VARIANT_DARK) ? 0x000000 : 0xFFFFFF;
+    XSetWindowBackground(DefaultDisplay, portal->frame_window, bg);
+
     // Resize the Cairo surface.
     cairo_xlib_surface_set_size(cairo_get_target(cr), width, height);
 

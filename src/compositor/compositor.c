@@ -300,28 +300,6 @@ static void draw_portal(Portal *portal)
     );
     if (window_surface == NULL) return;
 
-    // Sample client content luminance to resolve the portal's theme
-    // variant. Only applies in adaptive mode for framed portals.
-    if (has_frame && get_theme_mode() == THEME_MODE_ADAPTIVE)
-    {
-        float luminance = x_average_luminance(
-            display, pixmap,
-            0, PORTAL_TITLE_BAR_HEIGHT, portal->geometry.width, 1
-        );
-        if (luminance >= 0.0f)
-        {
-            ThemeVariant variant = (luminance > 0.5f) ? THEME_VARIANT_LIGHT : THEME_VARIANT_DARK;
-            if (variant != portal->theme)
-            {
-                portal->theme = variant;
-
-                // Redraw the frame so the titlebar reflects the new
-                // variant before it gets composited below.
-                draw_portal_frame(portal);
-            }
-        }
-    }
-
     // Draw the window surface to the off-screen buffer based on decoration kind.
     PortalDecoration kind = get_portal_decoration_kind(portal);
     if (kind == PORTAL_DECORATION_FRAMED || kind == PORTAL_DECORATION_FRAMELESS)
@@ -402,6 +380,31 @@ static void draw_portal(Portal *portal)
 
     // Clear the source to release Cairo's reference to window_surface.
     cairo_set_source_rgb(buffer_cr, 0, 0, 0);
+
+    // Sample client content luminance from the composited buffer to
+    // resolve the portal's theme variant. Sampling after drawing
+    // avoids needing to handle misalignment separately, since the
+    // buffer always contains the correct content. The variant change
+    // takes effect on the next frame.
+    if (has_frame && get_theme_mode() == THEME_MODE_ADAPTIVE)
+    {
+        float luminance = x_average_luminance(
+            display, buffer_pixmap,
+            portal->geometry.x_root,
+            portal->geometry.y_root + PORTAL_TITLE_BAR_HEIGHT,
+            portal->geometry.width, 1
+        );
+        if (luminance >= 0.0f)
+        {
+            ThemeVariant variant = (luminance > 0.5f)
+                ? THEME_VARIANT_LIGHT : THEME_VARIANT_DARK;
+            if (variant != portal->theme)
+            {
+                portal->theme = variant;
+                draw_portal_frame(portal);
+            }
+        }
+    }
 
     // Cleanup.
     cairo_surface_destroy(window_surface);
