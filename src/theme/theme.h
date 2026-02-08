@@ -12,6 +12,7 @@ typedef struct {
 
 /** A type representing the theme variant (light or dark). */
 typedef enum {
+    THEME_VARIANT_UNRESOLVED,
     THEME_VARIANT_LIGHT,
     THEME_VARIANT_DARK
 } ThemeVariant;

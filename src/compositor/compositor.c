@@ -200,8 +200,11 @@ static void draw_fullscreen_portal(Portal *portal)
 }
 
 /**
- * Renders a misaligned framed portal's content, avoiding
- * position flash from stale client offset in the frame.
+ * Redirects the client content of a misaligned portal into a separate buffer,
+ * allowing it to be composited independently from the frame pixmap.
+ *
+ * By default, only the portal's frame is redirected; this frame pixmap contains
+ * both the title bar and the client content combined into a single pixmap.
  */
 static void draw_split_content(
     Portal *portal,
@@ -302,73 +305,88 @@ static void draw_portal(Portal *portal)
 
     // Draw the window surface to the off-screen buffer based on decoration kind.
     PortalDecoration kind = get_portal_decoration_kind(portal);
-    if (kind == PORTAL_DECORATION_FRAMED || kind == PORTAL_DECORATION_FRAMELESS)
+
+    // Paint the client content directly if no decorations required.
+    if (kind == PORTAL_DECORATION_NONE)
     {
-        // Select decoration parameters based on kind.
-        int shadow_layers;
-        double shadow_spread, shadow_opacity, corner_radius;
-        void (*draw_border)(cairo_t *, Portal *, Pixmap);
-        if (kind == PORTAL_DECORATION_FRAMED)
-        {
-            shadow_layers = 4;
-            shadow_spread = 20;
-            shadow_opacity = 0.1;
-            corner_radius = PORTAL_CORNER_RADIUS;
-            draw_border = draw_framed_border;
-        }
-        else
-        {
-            shadow_layers = 3;
-            shadow_spread = 12;
-            shadow_opacity = 0.08;
-            corner_radius = PORTAL_FRAMELESS_CORNER_RADIUS;
-            draw_border = draw_frameless_border;
-        }
-
-        // Draw drop shadow.
-        draw_shadow(
-            buffer_cr, portal, shadow_layers,
-            shadow_spread, shadow_opacity, corner_radius
+        cairo_set_source_surface(
+            buffer_cr,
+            window_surface,
+            portal->geometry.x_root,
+            portal->geometry.y_root
         );
+        cairo_paint(buffer_cr);
+        goto done;
+    }
 
-        // Clip to rounded corners and paint portal content.
-        // Normally the frame pixmap is painted as a single surface.
-        // When the client is misaligned within the frame, split
-        // rendering draws the title bar from the frame pixmap and
-        // the client from its own pixmap at the WM-controlled
-        // offset, bypassing the stale position in the frame.
+    // Paint the client content directly if the theme is unresolved,
+    // this lets the compositor sample luminance and resolve the theme.
+    if (portal->theme == THEME_VARIANT_UNRESOLVED && has_frame)
+    {
         cairo_save(buffer_cr);
-        cairo_rounded_rectangle(
+        cairo_rectangle(
             buffer_cr,
             portal->geometry.x_root,
-            portal->geometry.y_root,
+            portal->geometry.y_root + PORTAL_TITLE_BAR_HEIGHT,
             portal->geometry.width,
-            portal->geometry.height,
-            corner_radius
+            portal->geometry.height - PORTAL_TITLE_BAR_HEIGHT
         );
         cairo_clip(buffer_cr);
-        if (has_frame && portal->misaligned)
-        {
-            draw_split_content(portal, window_surface);
-        }
-        else
-        {
-            cairo_set_source_surface(
-                buffer_cr,
-                window_surface,
-                portal->geometry.x_root,
-                portal->geometry.y_root
-            );
-            cairo_paint(buffer_cr);
-        }
+        cairo_set_source_surface(
+            buffer_cr,
+            window_surface,
+            portal->geometry.x_root,
+            portal->geometry.y_root
+        );
+        cairo_paint(buffer_cr);
         cairo_restore(buffer_cr);
+        goto done;
+    }
 
-        // Draw border.
-        draw_border(buffer_cr, portal, pixmap);
+    // Select decoration parameters based on kind.
+    int shadow_layers;
+    double shadow_spread, shadow_opacity, corner_radius;
+    void (*draw_border)(cairo_t *, Portal *, Pixmap);
+    if (kind == PORTAL_DECORATION_FRAMED)
+    {
+        shadow_layers = 4;
+        shadow_spread = 20;
+        shadow_opacity = 0.1;
+        corner_radius = PORTAL_CORNER_RADIUS;
+        draw_border = draw_framed_border;
     }
     else
     {
-        // Paint the window content directly.
+        shadow_layers = 3;
+        shadow_spread = 12;
+        shadow_opacity = 0.08;
+        corner_radius = PORTAL_FRAMELESS_CORNER_RADIUS;
+        draw_border = draw_frameless_border;
+    }
+
+    // Draw drop shadow.
+    draw_shadow(
+        buffer_cr, portal, shadow_layers,
+        shadow_spread, shadow_opacity, corner_radius
+    );
+
+    // Clip to rounded corners and paint portal content.
+    cairo_save(buffer_cr);
+    cairo_rounded_rectangle(
+        buffer_cr,
+        portal->geometry.x_root,
+        portal->geometry.y_root,
+        portal->geometry.width,
+        portal->geometry.height,
+        corner_radius
+    );
+    cairo_clip(buffer_cr);
+    if (has_frame && portal->misaligned)
+    {
+        draw_split_content(portal, window_surface);
+    }
+    else
+    {
         cairo_set_source_surface(
             buffer_cr,
             window_surface,
@@ -377,8 +395,13 @@ static void draw_portal(Portal *portal)
         );
         cairo_paint(buffer_cr);
     }
+    cairo_restore(buffer_cr);
 
-    // Clear the source to release Cairo's reference to window_surface.
+    // Draw border.
+    draw_border(buffer_cr, portal, pixmap);
+
+done:
+    // Clear the source to release Cairo's reference to `window_surface`.
     cairo_set_source_rgb(buffer_cr, 0, 0, 0);
 
     // Sample client content luminance from the composited buffer to
@@ -396,8 +419,7 @@ static void draw_portal(Portal *portal)
         );
         if (luminance >= 0.0f)
         {
-            ThemeVariant variant = (luminance > 0.5f)
-                ? THEME_VARIANT_LIGHT : THEME_VARIANT_DARK;
+            ThemeVariant variant = (luminance > 0.5f) ? THEME_VARIANT_LIGHT : THEME_VARIANT_DARK;
             if (variant != portal->theme)
             {
                 portal->theme = variant;

@@ -44,9 +44,9 @@ HANDLE(PortalCreated)
 {
     PortalCreatedEvent *_event = &event->portal_created;
 
-    // Set the initial theme variant based on the active mode.
-    // In adaptive mode neither condition matches, so the portal
-    // defaults to light until the compositor samples luminance.
+    // Set the initial theme variant based on the active mode. In adaptive mode 
+    // neither condition matches, so the portal stays `THEME_VARIANT_UNRESOLVED`
+    // until the compositor samples luminance.
     if (theme_mode == THEME_MODE_DARK)
     {
         _event->portal->theme = THEME_VARIANT_DARK;
