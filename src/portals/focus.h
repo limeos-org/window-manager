@@ -2,11 +2,15 @@
 #include "../all.h"
 
 /**
- * Handles focus changes in response to a portal click.
+ * Focuses a portal by setting keyboard input focus and raising it.
  *
- * Sets keyboard focus to the portal's client window and raises it if not
- * already on top.
- *
- * @param portal The portal that was clicked.
+ * @param portal The portal to focus.
  */
-void handle_portal_focus_click(Portal *portal);
+void focus_portal(Portal *portal);
+
+/**
+ * Returns the portal that currently has input focus.
+ *
+ * @return The focused portal, or NULL if no portal is focused.
+ */
+Portal *get_focused_portal();

@@ -7,8 +7,8 @@ HANDLE(ShortcutPressed)
     // Ensure we're handling the close shortcut.
     if (strcmp(_event->name, CFG_KEY_CLOSE_SHORTCUT) != 0) return;
 
-    // Get the top portal.
-    Portal *portal = get_top_portal();
+    // Get the focused portal.
+    Portal *portal = get_focused_portal();
     if (portal == NULL) return;
 
     // Close the portal (ICCCM compliant - uses WM_DELETE_WINDOW if supported).

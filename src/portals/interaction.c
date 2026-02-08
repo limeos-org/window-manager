@@ -36,8 +36,8 @@ HANDLE(RawButtonPress)
     // Skip override-redirect portals (popups, dropdowns, menus).
     if (portal->override_redirect) return;
 
-    // Handle focus for all button clicks.
-    handle_portal_focus_click(portal);
+    // Focus the clicked portal.
+    focus_portal(portal);
 
     // Skip frameless portals (CSD apps). They handle their own interactions.
     if (!is_portal_frame_valid(portal)) return;

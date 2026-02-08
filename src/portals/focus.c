@@ -1,24 +1,50 @@
 #include "../all.h"
 
-void handle_portal_focus_click(Portal *portal)
+static Portal *focused_portal = NULL;
+
+Portal *get_focused_portal()
+{
+    return focused_portal;
+}
+
+void focus_portal(Portal *portal)
 {
     if (portal->visibility != PORTAL_VISIBLE) return;
 
     // Always set keyboard focus (external events can steal it).
     x_focus_window(DefaultDisplay, portal->client_window);
 
-    // Raise and notify if not already on top.
-    if (get_top_portal() == portal) return;
-    raise_portal(portal);
-    call_event_handlers((Event*)&(PortalFocusedEvent){
-        .type = PortalFocused,
-        .portal = portal
-    });
+    // Raise the portal if not already on top.
+    if (get_top_portal() != portal)
+    {
+        raise_portal(portal);
+    }
+
+    // Notify if the portal is not already focused.
+    if (get_focused_portal() != portal)
+    {
+        call_event_handlers((Event*)&(PortalFocusedEvent){
+            .type = PortalFocused,
+            .portal = portal
+        });
+    }
+}
+
+HANDLE(PortalFocused)
+{
+    focused_portal = event->portal_focused.portal;
 }
 
 HANDLE(PortalDestroyed)
 {
-    Portal *destroyed = event->portal_destroyed.portal;
+    PortalDestroyedEvent *_event = &event->portal_destroyed;
+    Portal *destroyed = _event->portal;
+
+    // Clear stale focus if the destroyed portal was focused.
+    if (focused_portal == destroyed) focused_portal = NULL;
+
+    // Skip focus transfer if the destroyed portal was not focused.
+    if (focused_portal != NULL) return;
 
     // Prefer focusing back to the transient parent if available.
     Portal *next_portal = NULL;
@@ -63,7 +89,8 @@ HANDLE(PortalDestroyed)
 
 HANDLE(PortalMapped)
 {
-    Portal *portal = event->portal_mapped.portal;
+    PortalMappedEvent *_event = &event->portal_mapped;
+    Portal *portal = _event->portal;
 
     // Skip override-redirect windows (popups, dropdowns, menus).
     // These manage their own focus and stealing it breaks app behavior.

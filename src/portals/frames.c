@@ -142,7 +142,7 @@ void draw_portal_frame(Portal *portal)
     double indicator_x = 10.0 + indicator_radius;
     double indicator_y = PORTAL_TITLE_BAR_HEIGHT / 2.0;
     cairo_arc(cr, indicator_x, indicator_y, indicator_radius, 0, 2 * PI);
-    if (portal == get_top_portal())
+    if (portal == get_focused_portal())
     {
         cairo_fill(cr);
     }

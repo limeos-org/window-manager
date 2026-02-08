@@ -32,7 +32,7 @@ HANDLE(ShortcutPressed)
 
         if (strcmp(_event->name, expected) == 0)
         {
-            Portal *portal = get_top_portal();
+            Portal *portal = get_focused_portal();
             if (portal != NULL)
             {
                 move_portal_to_workspace(portal, i);
