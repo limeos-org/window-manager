@@ -364,11 +364,14 @@ static void draw_portal(Portal *portal)
         draw_border = draw_frameless_border;
     }
 
-    // Draw drop shadow.
-    draw_shadow(
-        buffer_cr, portal, shadow_layers,
-        shadow_spread, shadow_opacity, corner_radius
-    );
+    // Draw drop shadow. Skip for tiled portals.
+    if (!is_portal_tiled(portal))
+    {
+        draw_shadow(
+            buffer_cr, portal, shadow_layers,
+            shadow_spread, shadow_opacity, corner_radius
+        );
+    }
 
     // Clip to rounded corners and paint portal content.
     cairo_save(buffer_cr);

@@ -118,7 +118,7 @@ void enter_portal_fullscreen(Portal *portal)
     XGrabServer(display);
 
     // Back up current portal geometry for restore.
-    portal->geometry_backup = portal->geometry;
+    portal->geometry_fullscreen_backup = portal->geometry;
 
     // Redirect the client window for direct compositing.
     // When reparented to a frame, the client is no longer a direct child of 
@@ -209,14 +209,14 @@ void exit_portal_fullscreen(Portal *portal)
     if (has_frame)
     {
         // Calculate client dimensions from backed up portal geometry.
-        unsigned int client_width = portal->geometry_backup.width;
-        unsigned int client_height = portal->geometry_backup.height - PORTAL_TITLE_BAR_HEIGHT;
+        unsigned int client_width = portal->geometry_fullscreen_backup.width;
+        unsigned int client_height = portal->geometry_fullscreen_backup.height - PORTAL_TITLE_BAR_HEIGHT;
 
         // Restore frame position and size.
         XMoveResizeWindow(
             display, portal->frame_window,
-            portal->geometry_backup.x_root, portal->geometry_backup.y_root,
-            portal->geometry_backup.width, portal->geometry_backup.height
+            portal->geometry_fullscreen_backup.x_root, portal->geometry_fullscreen_backup.y_root,
+            portal->geometry_fullscreen_backup.width, portal->geometry_fullscreen_backup.height
         );
 
         // Restore client position within frame (below title bar) and size.
@@ -227,19 +227,19 @@ void exit_portal_fullscreen(Portal *portal)
         );
 
         // Update portal geometry.
-        portal->geometry = portal->geometry_backup;
+        portal->geometry = portal->geometry_fullscreen_backup;
     }
     else
     {
         // Restore client window to backed up position and dimensions.
         XMoveResizeWindow(
             display, portal->client_window,
-            portal->geometry_backup.x_root, portal->geometry_backup.y_root,
-            portal->geometry_backup.width, portal->geometry_backup.height
+            portal->geometry_fullscreen_backup.x_root, portal->geometry_fullscreen_backup.y_root,
+            portal->geometry_fullscreen_backup.width, portal->geometry_fullscreen_backup.height
         );
 
         // Update portal geometry.
-        portal->geometry = portal->geometry_backup;
+        portal->geometry = portal->geometry_fullscreen_backup;
     }
 
     // Unredirect the client window (restore normal frame-based compositing).
@@ -257,21 +257,42 @@ void exit_portal_fullscreen(Portal *portal)
     }
 
     // Calculate client geometry for ConfigureNotify.
-    int restored_x = portal->geometry_backup.x_root;
-    int restored_y = portal->geometry_backup.y_root + (has_frame ? PORTAL_TITLE_BAR_HEIGHT : 0);
-    unsigned int restored_width = portal->geometry_backup.width;
+    int restored_x = portal->geometry_fullscreen_backup.x_root;
+    int restored_y = portal->geometry_fullscreen_backup.y_root + (has_frame ? PORTAL_TITLE_BAR_HEIGHT : 0);
+    unsigned int restored_width = portal->geometry_fullscreen_backup.width;
     unsigned int restored_height = has_frame
-        ? portal->geometry_backup.height - PORTAL_TITLE_BAR_HEIGHT
-        : portal->geometry_backup.height;
+        ? portal->geometry_fullscreen_backup.height - PORTAL_TITLE_BAR_HEIGHT
+        : portal->geometry_fullscreen_backup.height;
 
     // Clear fullscreen state and geometry backup.
     portal->fullscreen = false;
-    portal->geometry_backup = (PortalGeometry){0, 0, 0, 0};
+    portal->geometry_fullscreen_backup = (PortalGeometry){0, 0, 0, 0};
 
     // Update _NET_WM_STATE property to inform the client.
     set_fullscreen_state(portal, false);
 
     XUngrabServer(display);
+
+    // Check workspace layout mode and adjust geometry accordingly.
+    int workspace = portal->workspace;
+    if (workspace >= 0 && workspace < MAX_WORKSPACES)
+    {
+        if (get_workspace_layout_mode(workspace) == WORKSPACE_LAYOUT_TILING)
+        {
+            // Place the portal at its tile slot.
+            arrange_workspace_portals(workspace);
+        }
+        else if (portal->geometry_floating_backup.width > 0)
+        {
+            // Restore geometry from backup.
+            resize_portal(portal,
+                portal->geometry_floating_backup.width,
+                portal->geometry_floating_backup.height);
+            move_portal(portal,
+                portal->geometry_floating_backup.x_root,
+                portal->geometry_floating_backup.y_root);
+        }
+    }
 
     // Send synthetic ConfigureNotify to inform client of restored geometry.
     XSendEvent(

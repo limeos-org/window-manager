@@ -335,3 +335,16 @@ float x_pixel_luminance(XImage *image, int x, int y);
  *         or -1.0 if the region could not be read.
  */
 float x_average_luminance(Display *display, Pixmap pixmap, int x, int y, int width, int height);
+
+/**
+ * Reads the `WM_CLASS` `res_class` string into the provided buffer.
+ *
+ * @param display The X11 display.
+ * @param window The window to query.
+ * @param out_buffer The buffer to store the class string.
+ * @param buffer_size The size of the buffer.
+ *
+ * @return - `0` The class was successfully read.
+ * @return - `-1` The class could not be read.
+ */
+int x_get_window_class(Display *display, Window window, char *out_buffer, size_t buffer_size);

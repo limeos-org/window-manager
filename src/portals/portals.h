@@ -57,7 +57,8 @@ typedef struct Portal {
     bool fullscreen;
     int workspace;                   // -1 if unassigned.
     PortalGeometry geometry;
-    PortalGeometry geometry_backup;  // Saved for fullscreen restore.
+    PortalGeometry geometry_fullscreen_backup; // Saved for fullscreen restore.
+    PortalGeometry geometry_floating_backup;   // Saved for floating restore.
     Window frame_window;
     cairo_t *frame_cr;
     Visual *frame_visual;

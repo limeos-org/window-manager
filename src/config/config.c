@@ -18,6 +18,9 @@ static const char default_config[] =
     "# sampling the client content luminance near the titlebar.\n"
     CFG_KEY_THEME "=" CFG_DEFAULT_THEME "\n"
     "\n"
+    "# The gap between tiled portals in pixels.\n"
+    CFG_KEY_TILE_GAP "=" CFG_DEFAULT_TILE_GAP "\n"
+    "\n"
     "# ---\n"
     "# Background\n"
     "# --- \n"
@@ -63,7 +66,10 @@ static const char default_config[] =
     CFG_KEY_MOVE_WORKSPACE_3_SHORTCUT "=" CFG_DEFAULT_MOVE_WORKSPACE_3_SHORTCUT "\n"
     CFG_KEY_MOVE_WORKSPACE_4_SHORTCUT "=" CFG_DEFAULT_MOVE_WORKSPACE_4_SHORTCUT "\n"
     CFG_KEY_MOVE_WORKSPACE_5_SHORTCUT "=" CFG_DEFAULT_MOVE_WORKSPACE_5_SHORTCUT "\n"
-    CFG_KEY_MOVE_WORKSPACE_6_SHORTCUT "=" CFG_DEFAULT_MOVE_WORKSPACE_6_SHORTCUT "\n";
+    CFG_KEY_MOVE_WORKSPACE_6_SHORTCUT "=" CFG_DEFAULT_MOVE_WORKSPACE_6_SHORTCUT "\n"
+    "\n"
+    "# The shortcut used to switch between floating and tiling.\n"
+    CFG_KEY_ARRANGE_SHORTCUT "=" CFG_DEFAULT_ARRANGE_SHORTCUT "\n";
 // clang-format on
 
 HANDLE(Prepare)

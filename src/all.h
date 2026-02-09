@@ -51,6 +51,7 @@
 #include "ewmh/moveresize.h"
 #include "portals/portals.h"
 #include "workspaces/workspaces.h"
+#include "workspaces/tiling.h"
 #include "compositor/shadow.h"
 #include "compositor/border.h"
 #include "portals/frames.h"

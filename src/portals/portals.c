@@ -144,7 +144,8 @@ Portal *create_portal(Window client_window)
         .fullscreen = false,
         .workspace = -1,
         .geometry = {0, 0, 1, 1},
-        .geometry_backup = {0, 0, 0, 0},
+        .geometry_fullscreen_backup = {0, 0, 0, 0},
+        .geometry_floating_backup = {0, 0, 0, 0},
         .frame_window = None,
         .frame_cr = NULL,
         .client_window = client_window,
@@ -591,8 +592,8 @@ void map_portal(Portal *portal)
     // Apply `WM_NORMAL_HINTS` position if specified by the client, otherwise
     // center the portal relative to either the screen (normal) or parent
     // (transient). Override-redirect windows position themselves, so skip them.
-    // Only do this on first map to preserve portal position across when
-    // suspending and revealing (Fullscreen, Workspace switching).
+    // Only do this on first map to preserve portal position during
+    // suspend/reveal cycles (fullscreen, workspace switching).
     if (!portal->override_redirect && first_map)
     {
         bool should_center = true;
@@ -645,6 +646,13 @@ void map_portal(Portal *portal)
     // Synchronize the portal geometry.
     synchronize_portal(portal);
 
+    // Seed `geometry_floating_backup` on first map so portals spawned into
+    // tiling mode have a fallback size for tiling -> floating transitions.
+    if (first_map && portal->geometry_floating_backup.width == 0)
+    {
+        portal->geometry_floating_backup = portal->geometry;
+    }
+
     // Raise the portal above its parent if applicable, as per ICCCM.
     // `raise_portal()` calls `sort_portals()` internally.
     if (portal->transient_for != NULL)
@@ -659,7 +667,8 @@ void map_portal(Portal *portal)
     // Call all event handlers of the PortalMapped event.
     call_event_handlers((Event*)&(PortalMappedEvent){
         .type = PortalMapped,
-        .portal = portal
+        .portal = portal,
+        .first_map = first_map
     });
 }
 

@@ -199,6 +199,14 @@ HANDLE(Initialize)
     x_key_names_to_symbols(config_value, '+', keys, MAX_SHORTCUT_KEYS);
     register_shortcut(CFG_KEY_CLOSE_SHORTCUT, keys, MAX_SHORTCUT_KEYS);
 
+    // Register the arrange shortcut.
+    common.get_config_str(
+        config_value, sizeof(config_value),
+        CFG_KEY_ARRANGE_SHORTCUT, CFG_DEFAULT_ARRANGE_SHORTCUT
+    );
+    x_key_names_to_symbols(config_value, '+', keys, MAX_SHORTCUT_KEYS);
+    register_shortcut(CFG_KEY_ARRANGE_SHORTCUT, keys, MAX_SHORTCUT_KEYS);
+
     // Register go-to-workspace shortcuts.
     for (int i = 0; i < MAX_WORKSPACES; i++)
     {

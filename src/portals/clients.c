@@ -165,9 +165,10 @@ HANDLE(ConfigureRequest)
     Portal *portal = find_portal_by_window(client_window);
     if (portal != NULL && is_portal_frame_valid(portal))
     {
-        // For framed portals, the client window position is fixed within the
-        // frame. Only allow resize requests, and resize the whole portal.
-        if (_event->value_mask & (CWWidth | CWHeight))
+        // Resize the whole portal if the client requests a size change.
+        // The client position is fixed within the frame, so only resize
+        // is honored. Suppress for tiled portals.
+        if (!is_portal_tiled(portal) && (_event->value_mask & (CWWidth | CWHeight)))
         {
             unsigned int new_width = (_event->value_mask & CWWidth) ?
                 _event->width : portal->geometry.width;

@@ -72,7 +72,7 @@ static void draw_portal_trigger(Portal *portal, PortalTriggerType type)
     // Define the drawing path based on the trigger type.
     if (type == TRIGGER_CLOSE)
     {
-        // Center the X within the trigger area.
+        // Draw an "X" shape.
         int offset = (PORTAL_TRIGGER_SIZE - PORTAL_TRIGGER_ICON_SIZE) / 2;
         cairo_set_line_width(cr, 1);
         cairo_move_to(cr,
@@ -90,7 +90,18 @@ static void draw_portal_trigger(Portal *portal, PortalTriggerType type)
     }
     if (type == TRIGGER_ARRANGE)
     {
-        // TODO: Implement arrange trigger drawing.
+        // Draw a stroked rectangle.
+        int icon_width = PORTAL_TRIGGER_ICON_SIZE + 1;
+        int icon_height = PORTAL_TRIGGER_ICON_SIZE;
+        int offset_x = (PORTAL_TRIGGER_SIZE - icon_width) / 2;
+        int offset_y = (PORTAL_TRIGGER_SIZE - icon_height) / 2;
+        cairo_set_line_width(cr, 1);
+        cairo_rectangle(cr,
+            trigger_x + offset_x + 0.5,
+            trigger_y + offset_y + 0.5,
+            icon_width - 1,
+            icon_height - 1
+        );
     }
 
     // Draw the defined path.
@@ -100,7 +111,10 @@ static void draw_portal_trigger(Portal *portal, PortalTriggerType type)
 void draw_portal_triggers(Portal *portal)
 {
     draw_portal_trigger(portal, TRIGGER_CLOSE);
-    // draw_portal_trigger(portal, TRIGGER_ARRANGE);
+    if (portal->transient_for == NULL)
+    {
+        draw_portal_trigger(portal, TRIGGER_ARRANGE);
+    }
 }
 
 bool is_portal_triggers_area(Portal *portal, int rel_x, int rel_y)
@@ -109,10 +123,11 @@ bool is_portal_triggers_area(Portal *portal, int rel_x, int rel_y)
     {
         return true;
     }
-    // if (is_portal_trigger_area(portal, TRIGGER_ARRANGE, rel_x, rel_y))
-    // {
-    //     return true;
-    // }
+    if (portal->transient_for == NULL &&
+        is_portal_trigger_area(portal, TRIGGER_ARRANGE, rel_x, rel_y))
+    {
+        return true;
+    }
     return false;
 }
 
@@ -126,7 +141,7 @@ void handle_trigger_click(Portal *portal, int rel_x, int rel_y)
     }
     if (is_portal_trigger_area(portal, TRIGGER_ARRANGE, rel_x, rel_y))
     {
-        // arrange_portals();
-        // return;
+        toggle_workspace_layout_mode();
+        return;
     }
 }

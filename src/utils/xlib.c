@@ -620,6 +620,33 @@ float x_pixel_luminance(XImage *image, int x, int y)
     return (float)(0.299 * r + 0.587 * g + 0.114 * b) / 255.0f;
 }
 
+int x_get_window_class(Display *display, Window window, char *out_buffer, size_t buffer_size)
+{
+    // Retrieve the `WM_CLASS` property using `XGetClassHint()`.
+    XClassHint class_hint;
+    if (XGetClassHint(display, window, &class_hint) == 0)
+    {
+        return -1;
+    }
+
+    // Copy `res_class` into the output buffer.
+    if (class_hint.res_class != NULL)
+    {
+        strncpy(out_buffer, class_hint.res_class, buffer_size - 1);
+        out_buffer[buffer_size - 1] = '\0';
+    }
+    else
+    {
+        out_buffer[0] = '\0';
+    }
+
+    // Free the allocated strings.
+    if (class_hint.res_name != NULL) XFree(class_hint.res_name);
+    if (class_hint.res_class != NULL) XFree(class_hint.res_class);
+
+    return 0;
+}
+
 float x_average_luminance(Display *display, Pixmap pixmap, int x, int y, int width, int height)
 {
     // Acquire the region from the pixmap.

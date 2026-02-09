@@ -85,6 +85,7 @@ typedef struct {
 typedef struct {
     int type;
     Portal *portal;
+    bool first_map;
 } PortalMappedEvent;
 
 /**

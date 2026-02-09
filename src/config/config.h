@@ -1,39 +1,43 @@
 #pragma once
 #include "../all.h"
 
-// Configuration keys and defaults (framerate).
+/** Configuration key for the target framerate. */
 #define CFG_KEY_FRAMERATE "framerate"
 #define CFG_DEFAULT_FRAMERATE "60"
 
-// Configuration keys and defaults (theme).
+/** Configuration key for the window theme. */
 #define CFG_KEY_THEME "theme"
 #define CFG_DEFAULT_THEME "adaptive"
 
-// Configuration keys and defaults (background_mode).
+/** Configuration key for the gap between tiled portals. */
+#define CFG_KEY_TILE_GAP "tile_gap"
+#define CFG_DEFAULT_TILE_GAP "6"
+
+/** Configuration key for the background mode. */
 #define CFG_KEY_BACKGROUND_MODE "background_mode"
 #define CFG_DEFAULT_BACKGROUND_MODE "solid"
 
-// Configuration keys and defaults (background_color).
+/** Configuration key for the background color. */
 #define CFG_KEY_BACKGROUND_COLOR "background_color"
 #define CFG_DEFAULT_BACKGROUND_COLOR "0x1C1C1C"
 
-// Configuration keys and defaults (background_image_path).
+/** Configuration key for the background image path. */
 #define CFG_KEY_BACKGROUND_IMAGE_PATH "background_image_path"
 #define CFG_DEFAULT_BACKGROUND_IMAGE_PATH "~/background.png"
 
-// Configuration keys and defaults (terminal_shortcut).
+/** Configuration key for the terminal shortcut. */
 #define CFG_KEY_TERMINAL_SHORTCUT "terminal_shortcut"
 #define CFG_DEFAULT_TERMINAL_SHORTCUT "super+t"
 
-// Configuration keys and defaults (terminal_command).
+/** Configuration key for the terminal command. */
 #define CFG_KEY_TERMINAL_COMMAND "terminal_command"
 #define CFG_DEFAULT_TERMINAL_COMMAND "xterm"
 
-// Configuration keys and defaults (exit_shortcut).
+/** Configuration key for the exit shortcut. */
 #define CFG_KEY_EXIT_SHORTCUT "exit_shortcut"
 #define CFG_DEFAULT_EXIT_SHORTCUT "super+shift+e"
 
-// Configuration keys and defaults (close_shortcut).
+/** Configuration key for the close shortcut. */
 #define CFG_KEY_CLOSE_SHORTCUT "close_shortcut"
 #define CFG_DEFAULT_CLOSE_SHORTCUT "super+shift+q"
 
@@ -96,3 +100,7 @@
 /** Configuration key for moving to the 6th workspace. */
 #define CFG_KEY_MOVE_WORKSPACE_6_SHORTCUT "move_to_workspace_6_shortcut"
 #define CFG_DEFAULT_MOVE_WORKSPACE_6_SHORTCUT "super+shift+6"
+
+/** Configuration key for the arrange shortcut. */
+#define CFG_KEY_ARRANGE_SHORTCUT "arrange_shortcut"
+#define CFG_DEFAULT_ARRANGE_SHORTCUT "super+a"

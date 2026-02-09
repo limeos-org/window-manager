@@ -56,8 +56,11 @@ HANDLE(RawButtonPress)
         return;
     }
 
+    // Determine if portal is tiled, so we can suppress drag and resize.
+    bool is_tiled = is_portal_tiled(portal);
+
     // Check resize area (bottom-right corner).
-    if (is_portal_resize_area(portal, rel_x, rel_y))
+    if (!is_tiled && is_portal_resize_area(portal, rel_x, rel_y))
     {
         if (!is_portal_resizing())
         {
@@ -67,7 +70,7 @@ HANDLE(RawButtonPress)
     }
 
     // Check frame area (title bar) for dragging.
-    if (is_portal_frame_area(portal, rel_x, rel_y))
+    if (!is_tiled && is_portal_frame_area(portal, rel_x, rel_y))
     {
         if (!is_portal_dragging())
         {
@@ -136,19 +139,29 @@ HANDLE(RawMotionNotify)
     Portal *portal = find_portal_by_window(child_window);
     bool in_resize_area = false;
     bool in_frame_area = false;
+    bool in_trigger_area = false;
 
     if (portal != NULL && is_portal_frame_valid(portal))
     {
         int rel_x = pointer_x_root - portal->geometry.x_root;
         int rel_y = pointer_y_root - portal->geometry.y_root;
 
+        // Determine if portal is tiled, so we can suppress hover markers
+        // for drag and resize.
+        bool is_tiled = is_portal_tiled(portal);
+
+        // Check trigger area for pointer cursor even in tiling mode.
+        if (is_portal_triggers_area(portal, rel_x, rel_y))
+        {
+            in_trigger_area = true;
+        }
         // Check resize area first (takes priority over frame area).
-        if (is_portal_resize_area(portal, rel_x, rel_y))
+        else if (!is_tiled && is_portal_resize_area(portal, rel_x, rel_y))
         {
             in_resize_area = true;
         }
         // Check frame area (title bar) only if not in resize area.
-        else if (is_portal_frame_area(portal, rel_x, rel_y))
+        else if (!is_tiled && is_portal_frame_area(portal, rel_x, rel_y))
         {
             in_frame_area = true;
         }
@@ -163,8 +176,7 @@ HANDLE(RawMotionNotify)
     {
         remove_marker(common.string_to_id("hover_resize"));
     }
-
-    if (in_frame_area)
+    if (in_frame_area || in_trigger_area)
     {
         add_marker(common.string_to_id("hover_frame"), XC_hand2, false);
     }
