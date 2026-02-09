@@ -37,18 +37,39 @@ static void grab_shortcut_keys(int *keys, int keys_size)
         }
     }
 
-    // Grab each non-modifier key with the modifier mask. This ensures all keys
-    // in multi-key shortcuts are grabbed and won't propagate to clients.
-    // We grab with all four NumLock/CapsLock combinations so shortcuts work
-    // whether these locks are on or off.
+    // Build modifier combinations for all lock-key states (NumLock,
+    // CapsLock, both, neither) so shortcuts fire regardless of locks.
+    XIGrabModifiers xi_modifiers[4];
     unsigned int locks[] = {0, Mod2Mask, LockMask, Mod2Mask | LockMask};
+    for (int i = 0; i < 4; i++)
+    {
+        xi_modifiers[i].modifiers = modifiers | locks[i];
+        xi_modifiers[i].status = 0;
+    }
+
+    // Build the XI2 event mask for the grab. KeyPress/KeyRelease
+    // make the grab intercept keys. RawKeyPress/RawKeyRelease are
+    // included because the grab suppresses any event type not in
+    // this mask, and the tracker depends on raw events.
+    XIEventMask xi_mask;
+    unsigned char mask_bytes[XIMaskLen(XI_LASTEVENT)] = {0};
+    xi_mask.deviceid = XIAllMasterDevices;
+    xi_mask.mask_len = sizeof(mask_bytes);
+    xi_mask.mask = mask_bytes;
+    XISetMask(xi_mask.mask, XI_KeyPress);
+    XISetMask(xi_mask.mask, XI_KeyRelease);
+    XISetMask(xi_mask.mask, XI_RawKeyPress);
+    XISetMask(xi_mask.mask, XI_RawKeyRelease);
+
+    // Grab each non-modifier key with the modifier mask.
     for (int i = 0; i < keycode_count; i++)
     {
         if (keycodes[i] == 0) continue;
-        for (int j = 0; j < 4; j++)
-        {
-            XGrabKey(display, keycodes[i], modifiers | locks[j], root, True, GrabModeAsync, GrabModeAsync);
-        }
+        XIGrabKeycode(
+            display, XIAllMasterDevices, keycodes[i],
+            root, GrabModeAsync, GrabModeAsync,
+            True, &xi_mask, 4, xi_modifiers
+        );
     }
 }
 

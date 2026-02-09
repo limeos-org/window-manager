@@ -92,10 +92,13 @@ void initialize_event_loop()
                 XGetEventData(display, cookie);
                 XIRawEvent *xi_raw_event = cookie->data;
 
-                // Ignore the event if it originated from a slave device.
-                int device_type = 0;
-                xi_get_device_type(display, xi_raw_event->deviceid, &device_type);
-                if (device_type != XIMasterPointer && device_type != XIMasterKeyboard)
+                // Skip non-raw XI2 input events. Active grabs (XIGrabKeycode)
+                // produce non-raw duplicates alongside the raw events we
+                // process. We only handle raw events in the pipeline.
+                if (xi_raw_event->evtype == XI_KeyPress ||
+                    xi_raw_event->evtype == XI_KeyRelease ||
+                    xi_raw_event->evtype == XI_ButtonPress ||
+                    xi_raw_event->evtype == XI_ButtonRelease)
                 {
                     XFreeEventData(display, cookie);
                     continue;

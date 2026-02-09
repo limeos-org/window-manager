@@ -69,7 +69,7 @@ Event convert_raw_xinput_event(XIRawEvent *raw_event)
     }
     else
     {
-        LOG_WARNING("Attempted to convert unsupported XInput2 event type (%d).", raw_event->type);
+        LOG_WARNING("Attempted to convert unsupported XInput2 event type (%d).", raw_event->evtype);
         return (Event){0};
     }
 }
