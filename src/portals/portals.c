@@ -712,15 +712,15 @@ void suspend_portal(Portal *portal)
 
     bool visible_before_suspend = (portal->visibility == PORTAL_VISIBLE);
 
-    // Unmap non-override-redirect portals that are currently visible.
+    // Unmap the outermost window of non-override-redirect portals
+    // that are currently visible.
     if (visible_before_suspend && !portal->override_redirect)
     {
         if (is_portal_frame_valid(portal))
         {
             XUnmapWindow(display, portal->frame_window);
         }
-
-        if (is_portal_client_valid(portal))
+        else if (is_portal_client_valid(portal))
         {
             XUnmapWindow(display, portal->client_window);
         }
